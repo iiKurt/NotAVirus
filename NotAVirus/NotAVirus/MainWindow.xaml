@@ -15,7 +15,13 @@
 		<TextBox x:Name="remoteIPTextBox" Height="23" Margin="221,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="206"/>
 		<TextBox x:Name="remotePortTextBox" Height="23" Margin="221,38,0,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="206"/>
 
-		<ListBox x:Name="messagesListBox" Margin="10,66,10,38"/>
+		<ListBox x:Name="messagesListBox" Margin="10,66,10,38" ItemsSource="{Binding}">
+			<ListBox.ItemTemplate>
+				<DataTemplate>
+					<TextBlock Text="{Binding Contents}"/>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
 
 		<TextBox x:Name="composeTextBox" Height="23" Margin="10,0,90,10" TextWrapping="Wrap" VerticalAlignment="Bottom"/>
 		<Button x:Name="sendButton" Content="Send" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="sendButton_Click" Height="23"/>
