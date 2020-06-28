@@ -1,0 +1,7 @@
+Application starts
+Broadcasts that I am online
+
+Others add broadcaster as a client
+Everyone responses with their IP? and name
+
+Broadcaster adds all the responses as a client

@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Text;
 using System.Windows;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 using System.Net;
@@ -13,10 +13,10 @@ namespace NotAVirus
     /// </summary>
     public partial class MainWindow : Window
     {
-		Socket sock; //hehe sock
-		EndPoint epLocal, epRemote;
+		EndPoint epLocal;
 
 		// has to be observable as WPF needs to know when it updates
+		ObservableCollection<Client> clients = new ObservableCollection<Client>();
 		ObservableCollection<Message> messages = new ObservableCollection<Message>();
 
         public MainWindow()
@@ -24,9 +24,6 @@ namespace NotAVirus
             InitializeComponent();
 
 			messagesListBox.ItemsSource = messages;
-
-			sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-			sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
 			localIPTextBox.Text = getLocalIP();
         }
@@ -50,30 +47,20 @@ namespace NotAVirus
 		}
 
 		// called when a message is received
-		private void messageCallBack(IAsyncResult result)
+		public void OnMessage(object sender, NewMessageEventArgs e) =>
+			// this is running in an async thread
+			// so we need to invoke the UI
+			// TODO: check how I did this on the old versions
+			Dispatcher.BeginInvoke(new Action(() =>
+				NewMessage((Client)sender, e.message)
+			));
+		
+		// which actually just calls this
+		public void NewMessage(Client from, Message message)
 		{
 			try
 			{
-				int size = sock.EndReceiveFrom(result, ref epRemote);
-
-				if (size > 0)
-				{
-					byte[] receivedData = new byte[1464];
-
-					receivedData = (byte[])result.AsyncState;
-
-					Chat message = new Chat(receivedData);
-
-					// this is running in an async thread
-					// so we need to invoke the UI
-					// TODO: check how I did this on the old versions
-					Dispatcher.BeginInvoke(new Action(() =>
-						messages.Add(message)
-					));
-				}
-
-				byte[] buffer = new byte[1500];
-				sock.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref epRemote, new AsyncCallback(messageCallBack), buffer);
+				messages.Add(message);
 			}
 			catch (Exception ex)
 			{
@@ -87,10 +74,11 @@ namespace NotAVirus
 			try
 			{
 				Chat message = new Chat("Other", composeTextBox.Text);
-				
-				byte[] msg = message.Serialize();
 
-				sock.Send(msg);
+				for (int i = 0; i < clients.Count; i++)
+				{
+					clients[i].SendMessage(message);
+				}
 
 				message.Sender = "You";
 				messages.Add(message);
@@ -107,13 +95,13 @@ namespace NotAVirus
 			try
 			{
 				epLocal = new IPEndPoint(IPAddress.Parse(localIPTextBox.Text), Convert.ToInt32(localPortTextBox.Text));
-				sock.Bind(epLocal);
+				
+				clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
 
-				epRemote = new IPEndPoint(IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text));
-				sock.Connect(epRemote);
-
-				byte[] buffer = new byte[1500];
-				sock.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref epRemote, new AsyncCallback(messageCallBack), buffer);
+				for (int i = 0; i < clients.Count; i++)
+				{
+					clients[i].NewMessage += new EventHandler<NewMessageEventArgs>(OnMessage);
+				}
 
 				connectButton.IsEnabled = false;
 				connectButton.Content = "Connected";

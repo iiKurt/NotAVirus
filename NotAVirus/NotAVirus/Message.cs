@@ -2,33 +2,61 @@
 
 namespace NotAVirus
 {
-	class Message
+	public enum Sign
 	{
-		public string Contents { get; set; }
+		Unsigned, Admin
 	}
 
-	class Chat : Message
+	public abstract class Message
 	{
-		public int Version;
+	}
+
+	public class LocalMessage : Message
+	{
+
+	}
+
+	public class RemoteMessage : Message
+	{
+		public int Version = 0;
+		public bool Direct = false;
+		public Sign Signed = Sign.Unsigned;
+
+		public virtual byte[] Serialize()
+		{
+			return null;
+		}
+		public RemoteMessage(byte[] data)
+		{
+
+		}
+	}
+
+	public class Event : RemoteMessage
+	{
+
+	}
+
+	public class Chat : RemoteMessage
+	{
 		// wpf liks properties and not fields
 		public string Sender { get; set; }
 		public string Words { get; set; }
 		// override the string in the MessageItem class
-		public new string Contents { get
+		public string Contents { get
 			{
 				return Sender + ": " + Words;
 			}
 		}
 
-		public Chat(string Sender, string Contents)
+		public Chat(string Sender, string Words)
 		{
-			this.Version = 0;
 			this.Sender = Sender;
-			this.Words = Contents;
+			this.Words = Words;
 		}
 
 		// https://stackoverflow.com/a/1446612
-		public byte[] Serialize()
+		public override byte[] Serialize()
 		{
 			using (MemoryStream m = new MemoryStream())
 			{
