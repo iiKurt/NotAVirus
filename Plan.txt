@@ -5,3 +5,12 @@ Others add broadcaster as a client
 Everyone responses with their IP? and name
 
 Broadcaster adds all the responses as a client
+
+==============================================
+
+Connect button pressed
+Send RemoteMessage with Event.Discovery
+Udp broadcast with that message
+Client receieves message, somehow gets its IP
+Responses with RemoteMessage + Event.Response
+Original sender somehow gets IP and adds it to list as a client

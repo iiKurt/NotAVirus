@@ -64,6 +64,6 @@ namespace NotAVirus
 
 	public class NewMessageEventArgs : EventArgs
 	{
-		public Message message;
+		public RemoteMessage message;
 	}
 }

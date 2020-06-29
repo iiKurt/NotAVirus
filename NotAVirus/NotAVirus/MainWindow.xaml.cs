@@ -56,11 +56,23 @@ namespace NotAVirus
 			));
 		
 		// which actually just calls this
-		public void NewMessage(Client from, Message message)
+		public void NewMessage(Client from, RemoteMessage message)
 		{
 			try
 			{
-				messages.Add(message);
+				switch (message.Event)
+				{
+					case Event.Message:
+						messages.Add(message);
+						break;
+					case Event.Response:
+						LocalMessage msg = new LocalMessage();
+						msg.Contents = "Got resposne from " + message.Sender;
+						messages.Add(msg);
+						break;
+					default:
+						break;
+				}
 			}
 			catch (Exception ex)
 			{
@@ -68,12 +80,11 @@ namespace NotAVirus
 			}
 		}
 
-		// send a message
-		private void sendButton_Click(object sender, RoutedEventArgs e)
+		private void sendMessage()
 		{
 			try
 			{
-				RemoteMessage message = new RemoteMessage("Other", composeTextBox.Text);
+				RemoteMessage message = new RemoteMessage(Event.Message, "Other", composeTextBox.Text);
 
 				for (int i = 0; i < clients.Count; i++)
 				{
@@ -90,17 +101,27 @@ namespace NotAVirus
 			}
 		}
 
+		// send a message
+		private void sendButton_Click(object sender, RoutedEventArgs e)
+		{
+			sendMessage();
+		}
+
 		private void connectButton_Click(object sender, RoutedEventArgs e)
 		{
 			try
 			{
 				epLocal = new IPEndPoint(IPAddress.Parse(localIPTextBox.Text), Convert.ToInt32(localPortTextBox.Text));
-				
-				clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
+
+				//clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
+
+				clients.Add(new Client(epLocal, IPAddress.Any, Convert.ToInt32(remotePortTextBox.Text)));
 
 				for (int i = 0; i < clients.Count; i++)
 				{
 					clients[i].NewMessage += new EventHandler<NewMessageEventArgs>(OnMessage);
+					RemoteMessage msg = new RemoteMessage(Event.Discovery);
+					clients[i].SendMessage(msg);
 				}
 
 				connectButton.IsEnabled = false;
