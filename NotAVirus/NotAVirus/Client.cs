@@ -54,7 +54,7 @@ namespace NotAVirus
 			Socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref EndPoint, new AsyncCallback(MessageCallBack), buffer);
 		}
 
-		public void SendMessage(Chat message)
+		public void SendMessage(RemoteMessage message)
 		{
 			byte[] msg = message.Serialize();
 

@@ -73,7 +73,7 @@ namespace NotAVirus
 		{
 			try
 			{
-				Chat message = new Chat("Other", composeTextBox.Text);
+				RemoteMessage message = new RemoteMessage("Other", composeTextBox.Text);
 
 				for (int i = 0; i < clients.Count; i++)
 				{

@@ -21,24 +21,9 @@ namespace NotAVirus
 		public int Version = 0;
 		public bool Direct = false;
 		public Sign Signed = Sign.Unsigned;
+        
+        // somehow use client instead of string on Sender
 
-		public virtual byte[] Serialize()
-		{
-			return null;
-		}
-		public RemoteMessage(byte[] data)
-		{
-
-		}
-	}
-
-	public class Event : RemoteMessage
-	{
-
-	}
-
-	public class Chat : RemoteMessage
-	{
 		// wpf liks properties and not fields
 		public string Sender { get; set; }
 		public string Words { get; set; }
@@ -49,14 +34,14 @@ namespace NotAVirus
 			}
 		}
 
-		public Chat(string Sender, string Words)
+		public RemoteMessage(string Sender, string Words)
 		{
 			this.Sender = Sender;
 			this.Words = Words;
 		}
 
 		// https://stackoverflow.com/a/1446612
-		public override byte[] Serialize()
+		public byte[] Serialize()
 		{
 			using (MemoryStream m = new MemoryStream())
 			{
@@ -70,7 +55,7 @@ namespace NotAVirus
 			}
 		}
 
-		public Chat(byte[] data) //Deserialise
+		public RemoteMessage(byte[] data) //Deserialise
 		{
 			using (MemoryStream m = new MemoryStream(data))
 			{
