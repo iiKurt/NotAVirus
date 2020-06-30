@@ -9,7 +9,7 @@ namespace NotAVirus
 
 	public enum Event
 	{
-		Message, Join, Leave, Discovery, Response
+		Join, Discovery, Message, Leave, 
 	}
 
 	public abstract class Message
@@ -41,12 +41,21 @@ namespace NotAVirus
 			}
 		}
 
-		// possibly split this up into different constructors (one for events, this one for normal message (assume Event.Message)
-		public RemoteMessage(Event Event, string Sender = null, string Words = null)
+		public RemoteMessage(string Words, string Sender = "Other")
 		{
-			this.Event = Event;
+			this.Event = Event.Message;
 			this.Sender = Sender;
 			this.Words = Words;
+		}
+
+		public RemoteMessage(Event Event)
+		{
+			this.Event = Event;
+			if (Event == Event.Message)
+			{
+				this.Sender = "";
+				this.Words = "";
+			}
 		}
 
 		// https://stackoverflow.com/a/1446612
@@ -58,8 +67,11 @@ namespace NotAVirus
 				{
 					writer.Write(Version);
 					writer.Write((int)Event);
-					writer.Write(Sender);
-					writer.Write(Words);
+					if (Event == Event.Message)
+					{
+						writer.Write(Sender);
+						writer.Write(Words);
+					}
 				}
 				return m.ToArray();
 			}
@@ -73,8 +85,11 @@ namespace NotAVirus
 				{ // order of these statements matter
 					this.Version = reader.ReadInt32();
 					this.Event = (Event)reader.ReadInt32();
-					this.Sender = reader.ReadString();
-					this.Words = reader.ReadString();
+					if (Event == Event.Message)
+					{
+						this.Sender = reader.ReadString();
+						this.Words = reader.ReadString();
+					}
 				}
 			}
 		}

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 using System.Net;
@@ -13,23 +12,27 @@ namespace NotAVirus
     /// </summary>
     public partial class MainWindow : Window
     {
+		const short port = 3012;
+
 		EndPoint epLocal;
 
 		// has to be observable as WPF needs to know when it updates
 		ObservableCollection<Client> clients = new ObservableCollection<Client>();
 		ObservableCollection<Message> messages = new ObservableCollection<Message>();
 
-        public MainWindow()
+		Broadcast broadcast;
+
+		public MainWindow()
         {
             InitializeComponent();
 
 			messagesListBox.ItemsSource = messages;
 
-			localIPTextBox.Text = getLocalIP();
+			localIPTextBox.Text = getLocalIP().ToString();
         }
 
 		// TODO: check how I did this on the old versions
-		private string getLocalIP()
+		private IPAddress getLocalIP()
 		{
 			IPHostEntry host;
 			host = Dns.GetHostEntry(Dns.GetHostName());
@@ -38,19 +41,16 @@ namespace NotAVirus
 			{
 				if (ip.AddressFamily == AddressFamily.InterNetwork)
 				{
-					return ip.ToString();
+					return ip;
 				}
 			}
 
-			return "127.0.0.1";
+			return IPAddress.Parse("127.0.0.1");
 			//return "10.0.2.15";
 		}
 
 		// called when a message is received
 		public void OnMessage(object sender, NewMessageEventArgs e) =>
-			// this is running in an async thread
-			// so we need to invoke the UI
-			// TODO: check how I did this on the old versions
 			Dispatcher.BeginInvoke(new Action(() =>
 				NewMessage((Client)sender, e.message)
 			));
@@ -64,11 +64,6 @@ namespace NotAVirus
 				{
 					case Event.Message:
 						messages.Add(message);
-						break;
-					case Event.Response:
-						LocalMessage msg = new LocalMessage();
-						msg.Contents = "Got resposne from " + message.Sender;
-						messages.Add(msg);
 						break;
 					default:
 						break;
@@ -84,7 +79,7 @@ namespace NotAVirus
 		{
 			try
 			{
-				RemoteMessage message = new RemoteMessage(Event.Message, "Other", composeTextBox.Text);
+				RemoteMessage message = new RemoteMessage(composeTextBox.Text);
 
 				for (int i = 0; i < clients.Count; i++)
 				{
@@ -115,14 +110,11 @@ namespace NotAVirus
 
 				//clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
 
-				clients.Add(new Client(epLocal, IPAddress.Any, Convert.ToInt32(remotePortTextBox.Text)));
+				// broadcast that we are online
 
-				for (int i = 0; i < clients.Count; i++)
-				{
-					clients[i].NewMessage += new EventHandler<NewMessageEventArgs>(OnMessage);
-					RemoteMessage msg = new RemoteMessage(Event.Discovery);
-					clients[i].SendMessage(msg);
-				}
+				broadcast = new Broadcast(getLocalIP(), port);
+
+				// we are 'connected'
 
 				connectButton.IsEnabled = false;
 				connectButton.Content = "Connected";
@@ -136,7 +128,10 @@ namespace NotAVirus
 				{
 					MessageBox.Show(ex.ToString());
 				}
-				throw;
+				else
+				{
+					throw;
+				}
 			}
 		}
 	}
