@@ -9,7 +9,7 @@ namespace Receive
     {
         private const int listenPort = 11000;
 
-        private static void StartListener()
+        public UDPListener()
         {
             UdpClient listener = new UdpClient(listenPort);
             IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, listenPort);
@@ -40,6 +40,8 @@ namespace Receive
     {
         static void Main(string[] args)
         {
+            new UDPListener();
+            Console.ReadKey();
         }
     }
 }
