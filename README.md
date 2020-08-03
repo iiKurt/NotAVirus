@@ -1,5 +1,5 @@
 # NotAVirus
-*Happy fun school project* (Probably riddeled with bugs)
+*Happy fun school project* (Probably riddled with bugs)
 
 ## Overview
 This project is supposed to be some kind of LAN messaging thing.
