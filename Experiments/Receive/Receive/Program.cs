@@ -1,4 +1,6 @@
-﻿using System;
+﻿// RECEIVING
+
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
