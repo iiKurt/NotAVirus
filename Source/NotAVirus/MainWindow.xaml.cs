@@ -29,8 +29,6 @@ namespace NotAVirus
 			messagesListBox.ItemsSource = messages;
 
 			localIPTextBox.Text = getLocalIP().ToString();
-
-            broadcast = new Broadcast(getLocalIP(), port);
         }
 
 		// TODO: check how I did this on the old versions
@@ -113,8 +111,13 @@ namespace NotAVirus
 				//clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
 
 				// broadcast that we are online
-
 				broadcast = new Broadcast(getLocalIP(), port);
+				broadcast.NewBroadcast += Broadcast_NewBroadcast;
+
+				RemoteMessage msg = new RemoteMessage("", "debug");
+				msg.Event = Event.Join;
+
+				broadcast.Send(msg, port);
 
 				// we are 'connected'
 
@@ -134,6 +137,22 @@ namespace NotAVirus
 				{
 					throw;
 				}
+			}
+		}
+
+		private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
+		{
+			switch (e.message.Event)
+			{
+				case Event.Join:
+					MessageBox.Show(e.message.Sender);
+					RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), "debug1");
+					msg.Event = Event.Discovery;
+					broadcast.Send(msg, port);
+					break;
+				case Event.Discovery:
+					// TODO: create a client and add it to list of clients
+					break;
 			}
 		}
 	}
