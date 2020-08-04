@@ -28,12 +28,15 @@ namespace NotAVirus
 
 			try
 			{
-				while (true)
+                UdpClient listener = new UdpClient(port);
+                IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, port);
+
+                while (true)
 				{
 					Console.WriteLine("Waiting for broadcast");
-					byte[] bytes = Client.Receive(ref EP);
+					byte[] bytes = listener.Receive(ref groupEP);
 
-					Console.WriteLine($"Received broadcast from {EP} :");
+					Console.WriteLine($"Received broadcast from {groupEP} :");
 				}
 			}
 			catch (SocketException e)
