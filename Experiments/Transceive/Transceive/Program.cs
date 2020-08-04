@@ -12,20 +12,19 @@ namespace Transceive
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Enter a port to send to: ");
-            int sendPort = Int32.Parse(Console.ReadLine());
-
-            while (true)
-            {
-                Console.WriteLine("Enter a message: ");
-                string message = Console.ReadLine();
-
-                Send(message, sendPort);
-            }
-
             Console.WriteLine("Enter a port to receive from:");
             int receivePort = Int32.Parse(Console.ReadLine());
-            Receive(receivePort);
+            new UDPListener(receivePort);
+
+            Console.WriteLine("=================================");
+
+            Console.WriteLine("Enter a port to send to: ");
+            int sendPort = Int32.Parse(Console.ReadLine());
+            
+            Console.WriteLine("Enter a message: ");
+            string message = Console.ReadLine();
+
+            Send(message, sendPort);
         }
 
         /// <summary>
@@ -53,37 +52,34 @@ namespace Transceive
 
         public class UDPListener
         {
+            UdpClient client;
+
             public UDPListener(int port = 11000)
             {
-                UdpClient listener = new UdpClient(port);
-                IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, port);
+                //Client uses as receive udp client
+                client = new UdpClient(port);
 
                 try
                 {
-                    while (true)
-                    {
-                        Console.WriteLine("Waiting for broadcast");
-                        byte[] bytes = listener.Receive(ref groupEP);
-
-                        Console.WriteLine($"Received broadcast from {groupEP.Address} (on port {groupEP.Port}) :");
-                        Console.WriteLine($" {Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
-                    }
+                    client.BeginReceive(new AsyncCallback(recv), null);
                 }
-                catch (SocketException e)
+                catch (Exception e)
                 {
-                    Console.WriteLine(e);
-                }
-                finally
-                {
-                    listener.Close();
+                    Console.WriteLine(e.ToString());
                 }
             }
-        }
 
-        static void Receive(int port)
-        {
-            new UDPListener(port);
-            Console.ReadKey();
+            //CallBack
+            private void recv(IAsyncResult res)
+            {
+                IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 8000);
+                byte[] received = client.EndReceive(res, ref RemoteIpEndPoint);
+
+                //Process codes
+
+                Console.WriteLine(Encoding.UTF8.GetString(received));
+                client.BeginReceive(new AsyncCallback(recv), null);
+            }
         }
     }
 }
