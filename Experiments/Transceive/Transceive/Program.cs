@@ -1,30 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Transceive
 {
     class Program
     {
-        static void Main(string[] args)
-        {
-            Console.WriteLine("Enter a port to receive from:");
-            int receivePort = Int32.Parse(Console.ReadLine());
-            new UDPListener(receivePort);
+		static void Main(string[] args)
+		{
+			Console.WriteLine("Enter a port to receive from:");
+			int receivePort = Int32.Parse(Console.ReadLine());
+			new UDPListener(receivePort);
 
-            Console.WriteLine("=================================");
+			Console.WriteLine("=================================");
 
-            Console.WriteLine("Enter a port to send to: ");
-            int sendPort = Int32.Parse(Console.ReadLine());
-            
-            Console.WriteLine("Enter a message: ");
-            string message = Console.ReadLine();
+			Console.WriteLine("Enter a port to send to: ");
+			int sendPort = Int32.Parse(Console.ReadLine());
 
-            Send(message, sendPort);
+			while (true) {
+				Console.WriteLine("Enter a message: ");
+				string message = Console.ReadLine();
+
+				Send(message, sendPort);
+			}
         }
 
         /// <summary>
@@ -77,7 +76,7 @@ namespace Transceive
 
                 //Process codes
 
-                Console.WriteLine(Encoding.UTF8.GetString(received));
+                Console.WriteLine("New Message: " + Encoding.UTF8.GetString(received));
                 client.BeginReceive(new AsyncCallback(recv), null);
             }
         }
