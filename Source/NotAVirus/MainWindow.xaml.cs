@@ -29,6 +29,8 @@ namespace NotAVirus
 			messagesListBox.ItemsSource = messages;
 
 			localIPTextBox.Text = getLocalIP().ToString();
+
+            broadcast = new Broadcast(getLocalIP(), port);
         }
 
 		// TODO: check how I did this on the old versions

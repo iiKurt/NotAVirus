@@ -24,7 +24,9 @@ namespace NotAVirus
 			EP = new IPEndPoint(IPAddress.Parse(ip2), port);
 
 			Socket.SendTo(sendbuf, EP);
-			//broadcast.BeginReceiveFrom(sendbuf, 0, sendbuf.Length, SocketFlags.None, ref ep, new AsyncCallback(OnBroadcastMessage), sendbuf);
+            //broadcast.BeginReceiveFrom(sendbuf, 0, sendbuf.Length, SocketFlags.None, ref ep, new AsyncCallback(OnBroadcastMessage), sendbuf);
+
+            MessageBox.Show("sending broadcast");
 
 			try
 			{
@@ -47,6 +49,8 @@ namespace NotAVirus
 			{
 				Client.Close();
 			}
+
+            MessageBox.Show("done broadcast, now checking");
 		}
 
 		public void OnBroadcastMessage(IAsyncResult result)
