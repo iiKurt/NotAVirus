@@ -6,25 +6,21 @@
         xmlns:local="clr-namespace:NotAVirus"
         mc:Ignorable="d"
         Title="Not A Virus" Height="350" Width="550" MinHeight="200" MinWidth="550" WindowStartupLocation="CenterScreen">
-	<Grid>
-		<Button x:Name="connectButton" Content="Connect" Margin="0,10,10,0" VerticalAlignment="Top" Click="connectButton_Click" Height="51" HorizontalAlignment="Right" Width="75"/>
+    <Grid>
+        <Button x:Name="connectButton" Content="Connect" Margin="0,10,10,0" VerticalAlignment="Top" Click="connectButton_Click" Height="23" HorizontalAlignment="Right" Width="75"/>
 
-		<TextBox x:Name="localIPTextBox" Height="23" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="206"/>
-        <TextBox x:Name="localPortTextBox" Height="23" Margin="10,38,0,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="206" Text="2270"/>
+        <ListBox x:Name="messagesListBox" Margin="10,38" ItemsSource="{Binding}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Contents}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
-		<TextBox x:Name="remoteIPTextBox" Height="23" Margin="221,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="206"/>
-        <TextBox x:Name="remotePortTextBox" Height="23" Margin="221,38,0,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="206" Text="2270"/>
+        <TextBox x:Name="composeTextBox" Height="23" Margin="10,0,90,10" TextWrapping="Wrap" VerticalAlignment="Bottom"/>
+        <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="sendButton_Click" Height="23"/>
+        <TextBox x:Name="nameTextBox" Height="23" Margin="59,10,90,0" TextWrapping="Wrap" Text="NameyMcNameFace" VerticalAlignment="Top"/>
+        <Label Content="Name:" HorizontalAlignment="Left" Margin="10,6,0,0" VerticalAlignment="Top"/>
 
-		<ListBox x:Name="messagesListBox" Margin="10,66,10,38" ItemsSource="{Binding}">
-			<ListBox.ItemTemplate>
-				<DataTemplate>
-					<TextBlock Text="{Binding Contents}"/>
-				</DataTemplate>
-			</ListBox.ItemTemplate>
-		</ListBox>
-
-		<TextBox x:Name="composeTextBox" Height="23" Margin="10,0,90,10" TextWrapping="Wrap" VerticalAlignment="Bottom"/>
-		<Button x:Name="sendButton" Content="Send" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="sendButton_Click" Height="23"/>
-
-	</Grid>
+    </Grid>
 </Window>

@@ -25,10 +25,7 @@ namespace NotAVirus
 		public MainWindow()
         {
             InitializeComponent();
-
 			messagesListBox.ItemsSource = messages;
-
-			localIPTextBox.Text = getLocalIP().ToString();
 
             broadcast = new Broadcast(getLocalIP(), port);
         }
@@ -108,7 +105,7 @@ namespace NotAVirus
 		{
 			try
 			{
-				epLocal = new IPEndPoint(IPAddress.Parse(localIPTextBox.Text), Convert.ToInt32(localPortTextBox.Text));
+				epLocal = new IPEndPoint(getLocalIP(), port);
 
 				//clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
 
