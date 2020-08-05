@@ -9,7 +9,10 @@ namespace NotAVirus
 
 	public enum Event
 	{
-		Join, Discovery, Message, Leave, 
+		Join, // When someone joins
+		Discovery, // Response to when someone joins, to determine who's online
+		Message, // A normal message
+		Leave // When someone leaves
 	}
 
 	public abstract class Message
@@ -31,8 +34,8 @@ namespace NotAVirus
         
         // somehow use client instead of string on Sender
 
-		// wpf liks properties and not fields
-		public string Sender { get; set; }
+		// wpf only likes properties and not fields
+		public string Sender { get; set; } // should be client object (with ips..?)
 		public string Words { get; set; }
 		// override the string in the MessageItem class
 		public new string Contents { get

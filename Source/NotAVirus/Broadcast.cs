@@ -1,82 +1,78 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Windows;
 
 namespace NotAVirus
 {
 	public class Broadcast
 	{
-		public UdpClient Client;
-		public Socket Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-		public IPEndPoint EP;
+		// EventThing
+		public event EventHandler<NewBroadcastEventArgs> NewBroadcast;
 
-		public Broadcast(IPAddress localIP, short port)
+		UdpClient client;
+		IPAddress selfIP;
+		int port;
+
+		public Broadcast(IPAddress selfIP, int port = 11000)
 		{
-			Client = new UdpClient(port);
-
-			RemoteMessage msg = new RemoteMessage(Event.Join);
-
-			string[] ip = localIP.ToString().Split('.');
-			string ip2 = ip[0] + "." + ip[1] + ".255.255";
-			
-			byte[] sendbuf = msg.Serialize();
-			EP = new IPEndPoint(IPAddress.Parse(ip2), port);
-
-			Socket.SendTo(sendbuf, EP);
-            //broadcast.BeginReceiveFrom(sendbuf, 0, sendbuf.Length, SocketFlags.None, ref ep, new AsyncCallback(OnBroadcastMessage), sendbuf);
-
-            MessageBox.Show("sending broadcast");
+			this.selfIP = selfIP;
+			this.port = port;
+			//Client uses as receive udp client
+			client = new UdpClient(port);
 
 			try
 			{
-                UdpClient listener = new UdpClient(port);
-                IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, port);
-
-                while (true)
-				{
-					Console.WriteLine("Waiting for broadcast");
-					byte[] bytes = listener.Receive(ref groupEP);
-
-					Console.WriteLine($"Received broadcast from {groupEP} :");
-				}
+				client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 			}
-			catch (SocketException e)
+			catch (Exception e)
 			{
-				Console.WriteLine(e);
+				Console.WriteLine(e.ToString());
 			}
-			finally
-			{
-				Client.Close();
-			}
-
-            MessageBox.Show("done broadcast, now checking");
 		}
 
-		public void OnBroadcastMessage(IAsyncResult result)
+		// EventThing
+		protected virtual void OnNewBroadcast(NewBroadcastEventArgs e)
 		{
-			MessageBox.Show("uhbguribngr");
-			// this is running in an async thread
-			// so we need to invoke the UI
-			// TODO: check how I did this on the old versions
-			//Dispatcher.BeginInvoke(new Action(() =>
-			NewBroadcastMessage();
-			//));
+			EventHandler<NewBroadcastEventArgs> handler = NewBroadcast;
+			handler?.Invoke(this, e);
 		}
 
-		public void NewBroadcastMessage()
+		//This is called when a message is received (before any events are called)
+		private void OnBroadcastMessage(IAsyncResult res)
 		{
-			// only should check if event.join or event.discovery...
-			// somehow get IPs...
-			MessageBox.Show(EP.Address.ToString());
-			/*switch ()
+			IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, port);
+			byte[] received = client.EndReceive(res, ref RemoteIpEndPoint);
+
+			// Begin receiving A$AP
+			client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
+
+			//Process the message
+			if (!RemoteIpEndPoint.Address.Equals(selfIP)) // message is from someone else
 			{
-				case Event.Join:
-					LocalMessage msg = new LocalMessage();
-					msg.Contents = "Got resposne from " + message.Sender;
-					messages.Add(msg);
-					break;
-			}*/
+				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
+				args.message = new RemoteMessage(received);
+				NewBroadcast(this, args); // raise event
+			}
 		}
+
+		public void Send(RemoteMessage message, int port)
+		{
+			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+			IPAddress broadcast = IPAddress.Parse("192.168.255.255");
+			IPEndPoint ep = new IPEndPoint(broadcast, port);
+
+			s.SendTo(message.Serialize(), ep);
+
+			Console.WriteLine($"Message sent to the broadcast address ({ep.Port})");
+		}
+	}
+
+	// EventThing
+	public class NewBroadcastEventArgs : EventArgs
+	{
+		public RemoteMessage message;
 	}
 }
