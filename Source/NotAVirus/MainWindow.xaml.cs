@@ -26,8 +26,13 @@ namespace NotAVirus
         {
             InitializeComponent();
 			messagesListBox.ItemsSource = messages;
+            clientsListBox.ItemsSource = clients;
 
-            broadcast = new Broadcast(getLocalIP(), port);
+            // Testering
+            /*
+            epLocal = new IPEndPoint(getLocalIP(), port);
+            clients.Add(new Client(epLocal, IPAddress.Parse("192.168.1.1"), port, "tester"));
+            */
         }
 
 		// TODO: check how I did this on the old versions
@@ -107,15 +112,18 @@ namespace NotAVirus
 			{
 				epLocal = new IPEndPoint(getLocalIP(), port);
 
-				//clients.Add(new Client(epLocal, IPAddress.Parse(remoteIPTextBox.Text), Convert.ToInt32(remotePortTextBox.Text)));
-
 				// broadcast that we are online
-
 				broadcast = new Broadcast(getLocalIP(), port);
+                broadcast.NewBroadcast += OnBroadcast;
 
-				// we are 'connected'
+                RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
+                msg.Event = Event.Join;
 
-				connectButton.IsEnabled = false;
+                broadcast.Send(msg, port);
+
+                // we are 'connected'
+
+                connectButton.IsEnabled = false;
 				connectButton.Content = "Connected";
 
 				sendButton.IsEnabled = true;
@@ -133,5 +141,42 @@ namespace NotAVirus
 				}
 			}
 		}
-	}
+
+        // called when a message is received
+        public void OnBroadcast(object sender, NewBroadcastEventArgs e) =>
+            Dispatcher.BeginInvoke(new Action(() =>
+                Broadcast_NewBroadcast(sender, e)
+            ));
+
+        // which actually calls this
+        private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
+        {
+            IPAddress remoteIP;
+            Client c;
+
+            switch (e.message.Event) // URGENT TODO: revamp this
+            {
+                case Event.Join:
+                    RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
+                    msg.Event = Event.Discovery;
+                    broadcast.Send(msg, port);
+
+                    remoteIP = IPAddress.Parse(e.message.Words);
+                    c = new Client(epLocal, remoteIP, port, e.message.Sender);
+                    c.NewMessage += OnMessage;
+                    clients.Add(c);
+
+                    MessageBox.Show($"New client joined: {e.message.Sender} ({e.message.Words})");
+                    break;
+                case Event.Discovery:
+                    remoteIP = IPAddress.Parse(e.message.Words);
+                    c = new Client(epLocal, remoteIP, port, e.message.Sender);
+                    c.NewMessage += OnMessage;
+                    clients.Add(c);
+
+                    MessageBox.Show($"Someone responded: {e.message.Sender} ({e.message.Words})");
+                    break;
+            }
+        }
+    }
 }

@@ -5,11 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:NotAVirus"
         mc:Ignorable="d"
-        Title="Not A Virus" Height="350" Width="550" MinHeight="200" MinWidth="550" WindowStartupLocation="CenterScreen">
+        Title="Not A Virus" Height="350" Width="744.28" MinHeight="200" MinWidth="550" WindowStartupLocation="CenterScreen">
     <Grid>
+        <Label Content="Name:" HorizontalAlignment="Left" Margin="195,6,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="nameTextBox" Height="23" Margin="244,10,90,0" TextWrapping="Wrap" Text="NameyMcNameFace" VerticalAlignment="Top"/>
+        
         <Button x:Name="connectButton" Content="Connect" Margin="0,10,10,0" VerticalAlignment="Top" Click="connectButton_Click" Height="23" HorizontalAlignment="Right" Width="75"/>
 
-        <ListBox x:Name="messagesListBox" Margin="10,38" ItemsSource="{Binding}">
+        <ListBox x:Name="messagesListBox" Margin="195,38,10,38" ItemsSource="{Binding}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Contents}"/>
@@ -17,10 +20,16 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <TextBox x:Name="composeTextBox" Height="23" Margin="10,0,90,10" TextWrapping="Wrap" VerticalAlignment="Bottom"/>
+        <TextBox x:Name="composeTextBox" Height="23" Margin="195,0,90,10" TextWrapping="Wrap" VerticalAlignment="Bottom"/>
         <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="sendButton_Click" Height="23"/>
-        <TextBox x:Name="nameTextBox" Height="23" Margin="59,10,90,0" TextWrapping="Wrap" Text="NameyMcNameFace" VerticalAlignment="Top"/>
-        <Label Content="Name:" HorizontalAlignment="Left" Margin="10,6,0,0" VerticalAlignment="Top"/>
 
+        <Label Content="People" HorizontalAlignment="Left" Margin="10,6,0,0" VerticalAlignment="Top"/>
+        <ListBox x:Name="clientsListBox" Margin="10,38,546,10" ItemsSource="{Binding}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </Grid>
 </Window>

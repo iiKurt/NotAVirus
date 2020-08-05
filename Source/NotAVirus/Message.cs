@@ -70,11 +70,8 @@ namespace NotAVirus
 				{
 					writer.Write(Version);
 					writer.Write((int)Event);
-					if (Event == Event.Message)
-					{
-						writer.Write(Sender);
-						writer.Write(Words);
-					}
+					writer.Write(Sender);
+					writer.Write(Words);
 				}
 				return m.ToArray();
 			}
@@ -88,11 +85,8 @@ namespace NotAVirus
 				{ // order of these statements matter
 					this.Version = reader.ReadInt32();
 					this.Event = (Event)reader.ReadInt32();
-					if (Event == Event.Message)
-					{
-						this.Sender = reader.ReadString();
-						this.Words = reader.ReadString();
-					}
+					this.Sender = reader.ReadString();
+					this.Words = reader.ReadString();
 				}
 			}
 		}

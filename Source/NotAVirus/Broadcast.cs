@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Windows;
 
 namespace NotAVirus
 {
@@ -19,6 +17,7 @@ namespace NotAVirus
 		{
 			this.selfIP = selfIP;
 			this.port = port;
+
 			//Client uses as receive udp client
 			client = new UdpClient(port);
 
