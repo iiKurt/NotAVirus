@@ -48,22 +48,31 @@ namespace NotAVirus
 		//This is called when a message is received (before any events are called)
 		private void OnBroadcastMessage(IAsyncResult res)
 		{
-			IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, port);
-			byte[] received = client.EndReceive(res, ref RemoteIpEndPoint);
+			IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, port);
+			byte[] received = client.EndReceive(res, ref groupEP);
 
 			// Begin receiving A$AP
 			client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 
 			//Process the message
-			if (!RemoteIpEndPoint.Address.Equals(selfIP)) // message is from someone else
+			if (!groupEP.Address.Equals(selfIP)) // message is from someone else
 			{
 				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
 				args.message = new RemoteMessage(received);
+				
+				// TODO: seems dodgy, fix it.
+				if (args.message.Event != Event.Join || args.message.Event != Event.Discovery)
+				{
+					return; // nuh uh - nope. should be a message directly to clients
+				}
+				// creating another new localclient seems real dodgy
+				args.message.Sender = new RemoteClient(new LocalClient(port), groupEP.Address, port, args.message.Contents);
 
 				switch (args.message.Event)
 				{
+					// raise events
 					case Event.Join:
-						Join(this, args); // raise event
+						Join(this, args);
 						break;
 					case Event.Discovery:
 						Discovery(this, args);

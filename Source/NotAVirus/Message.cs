@@ -20,11 +20,30 @@ namespace NotAVirus
 		public string Contents { get; set; }
 	}
 
+	public class InternalMessage : Message
+	{
+		public InternalMessage(string contents)
+		{
+			Contents = contents;
+		}
+	}
+
 	public class LocalMessage : Message
 	{
-        public LocalMessage(string contents)
+		public new string Contents
+		{
+			get
+			{
+				return Sender + ": " + Words;
+			}
+		}
+		public string Sender { get; set; }
+		public string Words { get; set; }
+
+		public LocalMessage(string words, string sender)
         {
-            Contents = contents;
+			Words = words;
+            Sender = sender;
         }
 	}
 
@@ -35,10 +54,8 @@ namespace NotAVirus
 		public Sign Signed = Sign.Unsigned;
 		public Event Event = Event.Message;
         
-        // TODO: somehow use client instead of string on Sender
-
 		// wpf only likes properties and not fields
-		public string Sender { get; set; } // should be client object (with ips..?)
+		public RemoteClient Sender { get; set; } // never transmitted over network, just inferred from incoming IP
 		public string Words { get; set; }
 		// override the string in the MessageItem class
 		public new string Contents { get
@@ -47,11 +64,10 @@ namespace NotAVirus
 			}
 		}
 
-		public RemoteMessage(string words, string sender = "Other")
+		public RemoteMessage(string words)
 		{
 			this.Event = Event.Message;
             this.Words = words;
-            this.Sender = sender;
 		}
 
 		public RemoteMessage(Event Event)
@@ -59,7 +75,6 @@ namespace NotAVirus
 			this.Event = Event;
 			if (Event == Event.Message)
 			{
-				this.Sender = "";
 				this.Words = "";
 			}
 		}
@@ -73,7 +88,6 @@ namespace NotAVirus
 				{
 					writer.Write(Version);
 					writer.Write((int)Event);
-					writer.Write(Sender);
 					writer.Write(Words);
 				}
 				return m.ToArray();
@@ -88,7 +102,6 @@ namespace NotAVirus
 				{ // order of these statements matter
 					this.Version = reader.ReadInt32();
 					this.Event = (Event)reader.ReadInt32();
-					this.Sender = reader.ReadString();
 					this.Words = reader.ReadString();
 				}
 			}

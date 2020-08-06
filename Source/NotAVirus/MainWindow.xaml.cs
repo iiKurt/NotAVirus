@@ -36,20 +36,31 @@ namespace NotAVirus
 		{
 			try
 			{
-				RemoteMessage message = new RemoteMessage(composeTextBox.Text, nameTextBox.Text); //we are the sender
+				RemoteMessage message = new RemoteMessage(composeTextBox.Text); //we are the sender
 
 				for (int i = 0; i < clients.Count; i++)
 				{
 					clients[i].Send(message);
 				}
 
-				message.Sender = "You";
-				messages.Add(message);
+				LocalMessage lmessage = new LocalMessage(composeTextBox.Text, "You");
+				messages.Add(lmessage);
 				composeTextBox.Clear();
 			}
 			catch (SocketException ex)
 			{
 				MessageBox.Show(ex.ToString());
+			}
+		}
+
+		private void addClient(RemoteClient client)
+		{
+			// check if client already exists before adding
+			if (!clients.Contains(client))
+			{ // Add the client
+				client.NewMessage += OnClientNewMessage;
+				client.Leave += OnClientLeave;
+				clients.Add(client);
 			}
 		}
 
@@ -77,7 +88,7 @@ namespace NotAVirus
 				broadcast.Join += OnJoin;
 				broadcast.Discovery += OnDiscovery;
 
-				RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
+				RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
 				msg.Event = Event.Join;
 
 				broadcast.Send(msg, port);
@@ -110,7 +121,7 @@ namespace NotAVirus
 		{
 			try
 			{
-				RemoteMessage message = new RemoteMessage("", nameTextBox.Text); //we are the sender
+				RemoteMessage message = new RemoteMessage(""); //we are the sender
 				message.Event = Event.Leave;
 
 				for (int i = 0; i < clients.Count; i++)
@@ -137,45 +148,20 @@ namespace NotAVirus
 		// which actually calls this
 		private void Broadcast_Join(object sender, NewBroadcastEventArgs e)
 		{
-			// when message class has sender as object this will be abstracted away
-			IPAddress remoteIP = IPAddress.Parse(e.message.Words);
-			RemoteClient c = new RemoteClient(self, remoteIP, port, e.message.Sender);
+			addClient(e.message.Sender);
 
-			// check if client already exists before adding
-			if (!clients.Contains(c))
-			{ // Add the client
-				c.NewMessage += OnClientNewMessage;
-				c.Leave += OnClientLeave;
-				clients.Add(c);
-			}
-
-			RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
+			RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
 			msg.Event = Event.Discovery;
 			broadcast.Send(msg, port);
 
-			messages.Add(new LocalMessage($"{c.Name} joined"));
+			messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
 		}
 		
 		// reponse to my join message (other people exist)
 		public void OnDiscovery(object sender, NewBroadcastEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
-				Broadcast_Discovery(sender, e)
+				addClient(e.message.Sender)
 			));
-		
-		private void Broadcast_Discovery(object sender, NewBroadcastEventArgs e)
-		{
-			// when message class has sender as object this will be abstracted away
-			IPAddress remoteIP = IPAddress.Parse(e.message.Words);
-			RemoteClient c = new RemoteClient(self, remoteIP, port, e.message.Sender);
-
-			// check if client already exists before adding
-			if (!clients.Contains(c))
-			{ // Add the client
-				c.NewMessage += OnClientNewMessage;
-				c.Leave += OnClientLeave;
-				clients.Add(c);
-			}
-		}
 
 		#endregion
 
@@ -203,13 +189,26 @@ namespace NotAVirus
 		private void Client_Leave(RemoteClient sender)
 		{
 			clients.Remove(sender); // wack, someone went offline :/
-			messages.Add(new LocalMessage($"{sender.Name} went offline"));
+			messages.Add(new InternalMessage($"{sender.Name} went offline"));
 		}
 
 		#endregion
 
-		// TODO: test if any of this actually works
+		// TODO: test if any of this actually works <==============
+
 		// abstract broadcast away enough so that Join and Discovery events could be moved into RemoteClient?!
 		// check client MessageCallback switch statment for details
+
+		// could Join and Discovery messages actually be a different class to RemoteMessage?
+		// ^ that would actually be real good to fix the dodgyness of the broadcast assigning sender to broadcast messages
+		// have a InfoMessage class where there is a string name, IP (not transmitted over network), and RSA keys too
+		// ^ yes real good idea lets do it sometime
+		// Leave messages could be broadcast only but ehh (doesn't really matter at all)
+
+		// rundown:
+		// broadcast fixing and whatnot
+		// direct messages
+		// encryption
+		// if I have time and it's secure: private rooms
 	}
 }

@@ -81,6 +81,7 @@ namespace NotAVirus
 				receivedData = (byte[])result.AsyncState;
 
 				RemoteMessage message = new RemoteMessage(receivedData);
+				message.Sender = this;
 
 				switch (message.Event)
 				{
