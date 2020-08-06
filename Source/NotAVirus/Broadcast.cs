@@ -7,13 +7,14 @@ namespace NotAVirus
 	public class Broadcast
 	{
 		// EventThing
-		public event EventHandler<NewBroadcastEventArgs> NewBroadcast;
+		public event EventHandler<NewBroadcastEventArgs> Join;
+		public event EventHandler<NewBroadcastEventArgs> Discovery;
 
 		UdpClient client;
 		IPAddress selfIP;
-		int port;
+		ushort port;
 
-		public Broadcast(IPAddress selfIP, int port = 11000)
+		public Broadcast(IPAddress selfIP, ushort port = 11000)
 		{
 			this.selfIP = selfIP;
 			this.port = port;
@@ -32,9 +33,15 @@ namespace NotAVirus
 		}
 
 		// EventThing
-		protected virtual void OnNewBroadcast(NewBroadcastEventArgs e)
+		protected virtual void OnJoin(NewBroadcastEventArgs e)
 		{
-			EventHandler<NewBroadcastEventArgs> handler = NewBroadcast;
+			EventHandler<NewBroadcastEventArgs> handler = Join;
+			handler?.Invoke(this, e);
+		}
+		
+		protected virtual void OnDiscovery(NewBroadcastEventArgs e)
+		{
+			EventHandler<NewBroadcastEventArgs> handler = Discovery;
 			handler?.Invoke(this, e);
 		}
 
@@ -52,7 +59,16 @@ namespace NotAVirus
 			{
 				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
 				args.message = new RemoteMessage(received);
-				NewBroadcast(this, args); // raise event
+
+				switch (args.message.Event)
+				{
+					case Event.Join:
+						Join(this, args); // raise event
+						break;
+					case Event.Discovery:
+						Discovery(this, args);
+						break;
+				}
 			}
 		}
 

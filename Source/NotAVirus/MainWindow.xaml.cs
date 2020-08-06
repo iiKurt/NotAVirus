@@ -32,37 +32,7 @@ namespace NotAVirus
 			messages.CollectionChanged += Messages_CollectionChanged;
 		}
 
-		private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-		{ // scroll any new items into view
-			messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
-			messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
-		}
-
-		// called when a message is received
-		public void OnMessage(object sender, NewMessageEventArgs e) =>
-			Dispatcher.BeginInvoke(new Action(() =>
-				Client_NewMessage((Client)sender, e.message)
-			));
-		
-		// which actually just calls this
-		public void Client_NewMessage(Client from, RemoteMessage message)
-		{
-			try
-			{
-				switch (message.Event)
-				{
-					case Event.Message:
-						messages.Add(message);
-						break;
-				}
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show(ex.ToString());
-			}
-		}
-
-		private void sendMessage()
+		private void sendTheMessage()
 		{
 			try
 			{
@@ -88,13 +58,13 @@ namespace NotAVirus
 		// send a message
 		private void sendButton_Click(object sender, RoutedEventArgs e)
 		{
-			sendMessage();
+			sendTheMessage();
 		}
 		private void composeTextBox_KeyDown(object sender, KeyEventArgs e)
 		{
 			if (e.Key == Key.Return)
 			{
-				sendMessage();
+				sendTheMessage();
 			}
 		}
 
@@ -104,7 +74,8 @@ namespace NotAVirus
 			{
 				// broadcast that we are online
 				broadcast = new Broadcast(self.IP, port);
-				broadcast.NewBroadcast += OnBroadcast;
+				broadcast.Join += OnJoin;
+				broadcast.Discovery += OnDiscovery;
 
 				RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
 				msg.Event = Event.Join;
@@ -128,6 +99,12 @@ namespace NotAVirus
 			    MessageBox.Show(ex.ToString());
 			}
 		}
+		
+		private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{ // scroll any new items into view
+			messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
+			messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
+		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
@@ -149,62 +126,90 @@ namespace NotAVirus
 
 		#endregion
 
-		// called when a message is received
-		public void OnBroadcast(object sender, NewBroadcastEventArgs e) =>
+		#region Broadcast
+
+		// called when someone joins the chat
+		public void OnJoin(object sender, NewBroadcastEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
-				Broadcast_NewBroadcast(sender, e)
+				Broadcast_Join(sender, e)
 			));
 
 		// which actually calls this
-		private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
+		private void Broadcast_Join(object sender, NewBroadcastEventArgs e)
 		{
+			// when message class has sender as object this will be abstracted away
 			IPAddress remoteIP = IPAddress.Parse(e.message.Words);
 			RemoteClient c = new RemoteClient(self, remoteIP, port, e.message.Sender);
 
-			switch (e.message.Event) // Add clients
-			{
-				case Event.Join: // Someone else joined
-				case Event.Discovery: // Response to my join request (other people exist)
-					// check if client already exists before adding
-					if (!clients.Contains(c)) {
-						c.NewMessage += OnMessage;
-						c.Offline += OnClientOffline;
-						clients.Add(c);
-					}
-					break;
-				case Event.Leave:
-					clients.Remove(c);
-					messages.Add(new LocalMessage($"{c.Name} went offline"));
-					break;
+			// check if client already exists before adding
+			if (!clients.Contains(c))
+			{ // Add the client
+				c.NewMessage += OnClientNewMessage;
+				c.Leave += OnClientLeave;
+				clients.Add(c);
 			}
 
-			switch (e.message.Event) // idk idk idk (extra edge case stuff for event.join
-			{
-				case Event.Join:
-					RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
-					msg.Event = Event.Discovery;
-					broadcast.Send(msg, port);
-					
-					messages.Add(new LocalMessage($"{c.Name} joined"));
-					break;
+			RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
+			msg.Event = Event.Discovery;
+			broadcast.Send(msg, port);
+
+			messages.Add(new LocalMessage($"{c.Name} joined"));
+		}
+		
+		// reponse to my join message (other people exist)
+		public void OnDiscovery(object sender, NewBroadcastEventArgs e) =>
+			Dispatcher.BeginInvoke(new Action(() =>
+				Broadcast_Discovery(sender, e)
+			));
+		
+		private void Broadcast_Discovery(object sender, NewBroadcastEventArgs e)
+		{
+			// when message class has sender as object this will be abstracted away
+			IPAddress remoteIP = IPAddress.Parse(e.message.Words);
+			RemoteClient c = new RemoteClient(self, remoteIP, port, e.message.Sender);
+
+			// check if client already exists before adding
+			if (!clients.Contains(c))
+			{ // Add the client
+				c.NewMessage += OnClientNewMessage;
+				c.Leave += OnClientLeave;
+				clients.Add(c);
 			}
 		}
 
-		private void OnClientOffline(object sender, EventArgs e)
+		#endregion
+
+		#region Client Events
+
+		// called when a NORMAL message is received
+		public void OnClientNewMessage(object sender, NewMessageEventArgs e) =>
+			Dispatcher.BeginInvoke(new Action(() =>
+				Client_NewMessage((RemoteClient)sender, e.message)
+			));
+
+		// which actually just calls this
+		public void Client_NewMessage(RemoteClient from, RemoteMessage message)
+		{
+			messages.Add(message);
+		}
+
+		private void OnClientLeave(object sender, EventArgs e)
 		{
 			Dispatcher.BeginInvoke(new Action(() =>
-				Client_Offline((RemoteClient)sender)
+				Client_Leave((RemoteClient)sender)
 			));
 		}
 
-		private void Client_Offline(RemoteClient sender)
+		private void Client_Leave(RemoteClient sender)
 		{
 			clients.Remove(sender); // wack, someone went offline :/
+			messages.Add(new LocalMessage($"{sender.Name} went offline"));
 		}
 
-		// TODO: better offline events and stuffs
-		// Client should throw exception if can't send (replaces client offline event)
-		// Client leave event
-		// also send message objects better: void sendMessage(RemoteMessage message, Client destination) { ... }
+		#endregion
+
+		// TODO: test if any of this actually works
+		// abstract broadcast away enough so that Join and Discovery events could be moved into RemoteClient?!
+		// check client MessageCallback switch statment for details
 	}
 }

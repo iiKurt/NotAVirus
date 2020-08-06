@@ -38,7 +38,7 @@ namespace NotAVirus
 		private Socket Socket;
 
 		public event EventHandler<NewMessageEventArgs> NewMessage;
-        public event EventHandler<EventArgs> Offline;
+        public event EventHandler<EventArgs> Leave;
 
         public RemoteClient(LocalClient binding, IPAddress ip, ushort port = 3012, string name = "Other")
 		{
@@ -71,11 +71,9 @@ namespace NotAVirus
             catch (SocketException)
             {
                 //if (ex.SocketErrorCode == SocketError.ConnectionReset) //connection was forcibly closed by the remote host
-                EventArgs args = new EventArgs();
-                Offline(this, args);
+                Leave(this, new EventArgs());
             }
-
-
+			
 			if (size > 0) // there's a message
 			{
 				byte[] receivedData = new byte[1464];
@@ -84,9 +82,18 @@ namespace NotAVirus
 
 				RemoteMessage message = new RemoteMessage(receivedData);
 
-				NewMessageEventArgs args = new NewMessageEventArgs();
-				args.message = message;
-				NewMessage(this, args);
+				switch (message.Event)
+				{
+					case Event.Leave:
+						Leave(this, new EventArgs());
+						break;
+					case Event.Message:
+						NewMessageEventArgs args = new NewMessageEventArgs();
+						args.message = message;
+						NewMessage(this, args);
+						break;
+					// what if a client sends us a private join or discovery message..? they dumb dumb
+				}
 			}
 
 			byte[] buffer = new byte[1500];
