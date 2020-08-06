@@ -14,12 +14,11 @@ namespace NotAVirus
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		const short port = 3012;
-
-		EndPoint epLocal;
+		const ushort port = 3012;
+		LocalClient self = new LocalClient(port);
 
 		// has to be observable as WPF needs to know when it updates
-		ObservableCollection<Client> clients = new ObservableCollection<Client>();
+		ObservableCollection<RemoteClient> clients = new ObservableCollection<RemoteClient>();
 		ObservableCollection<Message> messages = new ObservableCollection<Message>();
 
 		Broadcast broadcast;
@@ -37,23 +36,6 @@ namespace NotAVirus
 		{ // scroll any new items into view
 			messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
 			messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
-		}
-
-		// TODO: check how I did this on the old versions
-		private IPAddress getLocalIP()
-		{
-			IPHostEntry host;
-			host = Dns.GetHostEntry(Dns.GetHostName());
-
-			foreach (IPAddress ip in host.AddressList)
-			{
-				if (ip.AddressFamily == AddressFamily.InterNetwork)
-				{
-					return ip;
-				}
-			}
-
-			return IPAddress.Parse("127.0.0.1");
 		}
 
 		// called when a message is received
@@ -120,13 +102,11 @@ namespace NotAVirus
 		{
 			try
 			{
-				epLocal = new IPEndPoint(getLocalIP(), port);
-
 				// broadcast that we are online
-				broadcast = new Broadcast(getLocalIP(), port);
+				broadcast = new Broadcast(self.IP, port);
 				broadcast.NewBroadcast += OnBroadcast;
 
-				RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
+				RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
 				msg.Event = Event.Join;
 
 				broadcast.Send(msg, port);
@@ -143,16 +123,9 @@ namespace NotAVirus
 				composeTextBox.IsEnabled = true;
 				composeTextBox.Focus();
 			}
-			catch (Exception ex)
+			catch (SocketException ex)
 			{
-				if (ex is SocketException || ex is FormatException)
-				{
-					MessageBox.Show(ex.ToString());
-				}
-				else
-				{
-					throw;
-				}
+			    MessageBox.Show(ex.ToString());
 			}
 		}
 
@@ -186,7 +159,7 @@ namespace NotAVirus
 		private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
 		{
 			IPAddress remoteIP = IPAddress.Parse(e.message.Words);
-			Client c = new Client(epLocal, remoteIP, port, e.message.Sender);
+			RemoteClient c = new RemoteClient(self, remoteIP, port, e.message.Sender);
 
 			switch (e.message.Event) // Add clients
 			{
@@ -208,7 +181,7 @@ namespace NotAVirus
 			switch (e.message.Event) // idk idk idk (extra edge case stuff for event.join
 			{
 				case Event.Join:
-					RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
+					RemoteMessage msg = new RemoteMessage(self.IP.MapToIPv4().ToString(), nameTextBox.Text);
 					msg.Event = Event.Discovery;
 					broadcast.Send(msg, port);
 					
@@ -220,11 +193,11 @@ namespace NotAVirus
 		private void OnClientOffline(object sender, EventArgs e)
 		{
 			Dispatcher.BeginInvoke(new Action(() =>
-				Client_Offline((Client)sender)
+				Client_Offline((RemoteClient)sender)
 			));
 		}
 
-		private void Client_Offline(Client sender)
+		private void Client_Offline(RemoteClient sender)
 		{
 			clients.Remove(sender); // wack, someone went offline :/
 		}
@@ -233,6 +206,5 @@ namespace NotAVirus
 		// Client should throw exception if can't send (replaces client offline event)
 		// Client leave event
 		// also send message objects better: void sendMessage(RemoteMessage message, Client destination) { ... }
-		// should self be a LocalClient, and everyone else be RemoteClients? (both extend from abstract Client class)
 	}
 }

@@ -4,24 +4,51 @@ using System.Net.Sockets;
 
 namespace NotAVirus
 {
-	public class Client
+    public abstract class Client
+    {
+        public string Name { get; set; }
+        public EndPoint EndPoint; // cannot be property or Socket receiving doesn't like it
+    }
+
+    public class LocalClient : Client
+    {
+        public IPAddress IP { get; private set; }
+
+        public LocalClient(ushort port)
+        {
+            IPHostEntry host;
+            host = Dns.GetHostEntry(Dns.GetHostName());
+
+            IP = IPAddress.Parse("127.0.0.1"); // in case we can't find an IP
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    IP = ip;
+                    break;
+                }
+            }
+
+            EndPoint = new IPEndPoint(IP, port);
+        }
+    }
+
+	public class RemoteClient : Client
 	{
-		public string Name { get; set; }
-		public EndPoint EndPoint;
 		private Socket Socket;
 
 		public event EventHandler<NewMessageEventArgs> NewMessage;
         public event EventHandler<EventArgs> Offline;
 
-        public Client(EndPoint Binding, IPAddress IP, int Port = 3012, string Name = "Other")
+        public RemoteClient(LocalClient binding, IPAddress ip, ushort port = 3012, string name = "Other")
 		{
-			this.Name = Name;
-			this.EndPoint = new IPEndPoint(IP, Port);
+			Name = Name;
+			EndPoint = new IPEndPoint(ip, port);
 
 			Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 			Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-			Socket.Bind(Binding);
+			Socket.Bind(binding.EndPoint);
 			Socket.Connect(EndPoint);
 
 			byte[] buffer = new byte[1500];

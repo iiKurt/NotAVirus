@@ -47,11 +47,11 @@ namespace NotAVirus
 			}
 		}
 
-		public RemoteMessage(string Words, string Sender = "Other")
+		public RemoteMessage(string words, string sender = "Other")
 		{
 			this.Event = Event.Message;
-			this.Sender = Sender;
-			this.Words = Words;
+            this.Words = words;
+            this.Sender = sender;
 		}
 
 		public RemoteMessage(Event Event)
