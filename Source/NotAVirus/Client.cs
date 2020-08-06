@@ -11,8 +11,9 @@ namespace NotAVirus
 		public EndPoint EndPoint;
 
 		public event EventHandler<NewMessageEventArgs> NewMessage;
+        public event EventHandler<EventArgs> Offline;
 
-		public Client(EndPoint Binding, IPAddress IP, int Port = 3012, string Name = "Other")
+        public Client(EndPoint Binding, IPAddress IP, int Port = 3012, string Name = "Other")
 		{
 			this.Name = Name;
 			this.EndPoint = new IPEndPoint(IP, Port);
@@ -35,7 +36,18 @@ namespace NotAVirus
 
 		private void MessageCallBack(IAsyncResult result)
 		{
-			int size = Socket.EndReceiveFrom(result, ref EndPoint);
+            int size = 0;
+            try
+            {
+                size = Socket.EndReceiveFrom(result, ref EndPoint);
+            }
+            catch (SocketException)
+            {
+                //if (ex.SocketErrorCode == SocketError.ConnectionReset) //connection was forcibly closed by the remote host
+                EventArgs args = new EventArgs();
+                Offline(this, args);
+            }
+
 
 			if (size > 0) // there's a message
 			{

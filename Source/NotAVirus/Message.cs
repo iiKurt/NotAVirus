@@ -22,7 +22,10 @@ namespace NotAVirus
 
 	public class LocalMessage : Message
 	{
-
+        public LocalMessage(string contents)
+        {
+            Contents = contents;
+        }
 	}
 
 	public class RemoteMessage : Message
@@ -32,7 +35,7 @@ namespace NotAVirus
 		public Sign Signed = Sign.Unsigned;
 		public Event Event = Event.Message;
         
-        // somehow use client instead of string on Sender
+        // TODO: somehow use client instead of string on Sender
 
 		// wpf only likes properties and not fields
 		public string Sender { get; set; } // should be client object (with ips..?)

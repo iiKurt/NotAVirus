@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 
 using System.Net;
 using System.Net.Sockets;
+using System.Windows.Input;
 
 namespace NotAVirus
 {
@@ -28,15 +29,17 @@ namespace NotAVirus
 			messagesListBox.ItemsSource = messages;
             clientsListBox.ItemsSource = clients;
 
-            // Testering
-            /*
-            epLocal = new IPEndPoint(getLocalIP(), port);
-            clients.Add(new Client(epLocal, IPAddress.Parse("192.168.1.1"), port, "tester"));
-            */
+            messages.CollectionChanged += Messages_CollectionChanged;
         }
 
-		// TODO: check how I did this on the old versions
-		private IPAddress getLocalIP()
+        private void Messages_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        { // scroll any new items into view
+            messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
+            messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
+        }
+
+        // TODO: check how I did this on the old versions
+        private IPAddress getLocalIP()
 		{
 			IPHostEntry host;
 			host = Dns.GetHostEntry(Dns.GetHostName());
@@ -56,11 +59,11 @@ namespace NotAVirus
 		// called when a message is received
 		public void OnMessage(object sender, NewMessageEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
-				NewMessage((Client)sender, e.message)
+                Client_NewMessage((Client)sender, e.message)
 			));
 		
 		// which actually just calls this
-		public void NewMessage(Client from, RemoteMessage message)
+		public void Client_NewMessage(Client from, RemoteMessage message)
 		{
 			try
 			{
@@ -68,8 +71,6 @@ namespace NotAVirus
 				{
 					case Event.Message:
 						messages.Add(message);
-						break;
-					default:
 						break;
 				}
 			}
@@ -83,7 +84,7 @@ namespace NotAVirus
 		{
 			try
 			{
-				RemoteMessage message = new RemoteMessage(composeTextBox.Text);
+				RemoteMessage message = new RemoteMessage(composeTextBox.Text, nameTextBox.Text); //we are the sender
 
 				for (int i = 0; i < clients.Count; i++)
 				{
@@ -100,8 +101,10 @@ namespace NotAVirus
 			}
 		}
 
-		// send a message
-		private void sendButton_Click(object sender, RoutedEventArgs e)
+        #region WPF Events
+
+        // send a message
+        private void sendButton_Click(object sender, RoutedEventArgs e)
 		{
 			sendMessage();
 		}
@@ -126,7 +129,11 @@ namespace NotAVirus
                 connectButton.IsEnabled = false;
 				connectButton.Content = "Connected";
 
+                nameLabel.IsEnabled = false;
+                nameTextBox.IsEnabled = false;
+                
 				sendButton.IsEnabled = true;
+                composeTextBox.IsEnabled = true;
 				composeTextBox.Focus();
 			}
 			catch (Exception ex)
@@ -141,6 +148,16 @@ namespace NotAVirus
 				}
 			}
 		}
+        
+        private void composeTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Return)
+            {
+                sendMessage();
+            }
+        }
+
+        #endregion
 
         // called when a message is received
         public void OnBroadcast(object sender, NewBroadcastEventArgs e) =>
@@ -151,32 +168,71 @@ namespace NotAVirus
         // which actually calls this
         private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
         {
-            IPAddress remoteIP;
-            Client c;
+            IPAddress remoteIP = IPAddress.Parse(e.message.Words);
+            Client c = new Client(epLocal, remoteIP, port, e.message.Sender);
 
-            switch (e.message.Event) // URGENT TODO: revamp this
+            switch (e.message.Event) // Add clients
+            {
+                case Event.Join: // Someone else joined
+                case Event.Discovery: // Response to my join request (other people exist)
+                    // check if client already exists before adding
+                    if (!clients.Contains(c)) {
+                        c.NewMessage += OnMessage;
+                        c.Offline += OnClientOffline;
+                        clients.Add(c);
+                    }
+                    break;
+                case Event.Leave:
+                    clients.Remove(c);
+                    messages.Add(new LocalMessage($"{c.Name} went offline"));
+                    break;
+            }
+
+            switch (e.message.Event) // idk idk idk (extra edge case stuff for event.join
             {
                 case Event.Join:
                     RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
                     msg.Event = Event.Discovery;
                     broadcast.Send(msg, port);
-
-                    remoteIP = IPAddress.Parse(e.message.Words);
-                    c = new Client(epLocal, remoteIP, port, e.message.Sender);
-                    c.NewMessage += OnMessage;
-                    clients.Add(c);
-
-                    MessageBox.Show($"New client joined: {e.message.Sender} ({e.message.Words})");
-                    break;
-                case Event.Discovery:
-                    remoteIP = IPAddress.Parse(e.message.Words);
-                    c = new Client(epLocal, remoteIP, port, e.message.Sender);
-                    c.NewMessage += OnMessage;
-                    clients.Add(c);
-
-                    MessageBox.Show($"Someone responded: {e.message.Sender} ({e.message.Words})");
+                    
+                    messages.Add(new LocalMessage($"{c.Name} joined"));
                     break;
             }
         }
+
+        private void OnClientOffline(object sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+                Client_Offline((Client)sender)
+            ));
+        }
+
+        private void Client_Offline(Client sender)
+        {
+            clients.Remove(sender); // wack, someone went offline :/
+            messages.Add(new LocalMessage($"{sender.Name} is offline"));
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                RemoteMessage message = new RemoteMessage("", nameTextBox.Text); //we are the sender
+                message.Event = Event.Leave;
+
+                for (int i = 0; i < clients.Count; i++)
+                {
+                    clients[i].SendMessage(message);
+                }
+            }
+            catch (SocketException ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+        }
+
+        // TODO: better offline messages and stuffs
+        // also send message objects better
+        // should self also be another client object?
     }
 }
