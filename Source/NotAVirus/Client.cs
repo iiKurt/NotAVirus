@@ -7,8 +7,8 @@ namespace NotAVirus
 	public class Client
 	{
 		public string Name { get; set; }
-		private Socket Socket;
 		public EndPoint EndPoint;
+		private Socket Socket;
 
 		public event EventHandler<NewMessageEventArgs> NewMessage;
         public event EventHandler<EventArgs> Offline;
@@ -66,7 +66,7 @@ namespace NotAVirus
 			Socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref EndPoint, new AsyncCallback(MessageCallBack), buffer);
 		}
 
-		public void SendMessage(RemoteMessage message)
+		public void Send(RemoteMessage message)
 		{
 			byte[] msg = message.Serialize();
 

@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Input;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
 using System.Net;
 using System.Net.Sockets;
-using System.Windows.Input;
 
 namespace NotAVirus
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
-    {
+	/// <summary>
+	/// Interaction logic for MainWindow.xaml
+	/// </summary>
+	public partial class MainWindow : Window
+	{
 		const short port = 3012;
 
 		EndPoint epLocal;
@@ -24,22 +25,22 @@ namespace NotAVirus
 		Broadcast broadcast;
 
 		public MainWindow()
-        {
-            InitializeComponent();
+		{
+			InitializeComponent();
 			messagesListBox.ItemsSource = messages;
-            clientsListBox.ItemsSource = clients;
+			clientsListBox.ItemsSource = clients;
 
-            messages.CollectionChanged += Messages_CollectionChanged;
-        }
+			messages.CollectionChanged += Messages_CollectionChanged;
+		}
 
-        private void Messages_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-        { // scroll any new items into view
-            messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
-            messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
-        }
+		private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{ // scroll any new items into view
+			messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
+			messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
+		}
 
-        // TODO: check how I did this on the old versions
-        private IPAddress getLocalIP()
+		// TODO: check how I did this on the old versions
+		private IPAddress getLocalIP()
 		{
 			IPHostEntry host;
 			host = Dns.GetHostEntry(Dns.GetHostName());
@@ -53,13 +54,12 @@ namespace NotAVirus
 			}
 
 			return IPAddress.Parse("127.0.0.1");
-			//return "10.0.2.15";
 		}
 
 		// called when a message is received
 		public void OnMessage(object sender, NewMessageEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
-                Client_NewMessage((Client)sender, e.message)
+				Client_NewMessage((Client)sender, e.message)
 			));
 		
 		// which actually just calls this
@@ -88,7 +88,7 @@ namespace NotAVirus
 
 				for (int i = 0; i < clients.Count; i++)
 				{
-					clients[i].SendMessage(message);
+					clients[i].Send(message);
 				}
 
 				message.Sender = "You";
@@ -101,12 +101,19 @@ namespace NotAVirus
 			}
 		}
 
-        #region WPF Events
+		#region WPF Events
 
-        // send a message
-        private void sendButton_Click(object sender, RoutedEventArgs e)
+		// send a message
+		private void sendButton_Click(object sender, RoutedEventArgs e)
 		{
 			sendMessage();
+		}
+		private void composeTextBox_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.Key == Key.Return)
+			{
+				sendMessage();
+			}
 		}
 
 		private void connectButton_Click(object sender, RoutedEventArgs e)
@@ -117,23 +124,23 @@ namespace NotAVirus
 
 				// broadcast that we are online
 				broadcast = new Broadcast(getLocalIP(), port);
-                broadcast.NewBroadcast += OnBroadcast;
+				broadcast.NewBroadcast += OnBroadcast;
 
-                RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
-                msg.Event = Event.Join;
+				RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
+				msg.Event = Event.Join;
 
-                broadcast.Send(msg, port);
+				broadcast.Send(msg, port);
 
-                // we are 'connected'
+				// we are 'connected'
 
-                connectButton.IsEnabled = false;
+				connectButton.IsEnabled = false;
 				connectButton.Content = "Connected";
 
-                nameLabel.IsEnabled = false;
-                nameTextBox.IsEnabled = false;
-                
+				nameLabel.IsEnabled = false;
+				nameTextBox.IsEnabled = false;
+				
 				sendButton.IsEnabled = true;
-                composeTextBox.IsEnabled = true;
+				composeTextBox.IsEnabled = true;
 				composeTextBox.Focus();
 			}
 			catch (Exception ex)
@@ -148,91 +155,84 @@ namespace NotAVirus
 				}
 			}
 		}
-        
-        private void composeTextBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Return)
-            {
-                sendMessage();
-            }
-        }
 
-        #endregion
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+		{
+			try
+			{
+				RemoteMessage message = new RemoteMessage("", nameTextBox.Text); //we are the sender
+				message.Event = Event.Leave;
 
-        // called when a message is received
-        public void OnBroadcast(object sender, NewBroadcastEventArgs e) =>
-            Dispatcher.BeginInvoke(new Action(() =>
-                Broadcast_NewBroadcast(sender, e)
-            ));
+				for (int i = 0; i < clients.Count; i++)
+				{
+					clients[i].Send(message);
+				}
+			}
+			catch (SocketException ex)
+			{
+				MessageBox.Show(ex.ToString());
+			}
+		}
 
-        // which actually calls this
-        private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
-        {
-            IPAddress remoteIP = IPAddress.Parse(e.message.Words);
-            Client c = new Client(epLocal, remoteIP, port, e.message.Sender);
+		#endregion
 
-            switch (e.message.Event) // Add clients
-            {
-                case Event.Join: // Someone else joined
-                case Event.Discovery: // Response to my join request (other people exist)
-                    // check if client already exists before adding
-                    if (!clients.Contains(c)) {
-                        c.NewMessage += OnMessage;
-                        c.Offline += OnClientOffline;
-                        clients.Add(c);
-                    }
-                    break;
-                case Event.Leave:
-                    clients.Remove(c);
-                    messages.Add(new LocalMessage($"{c.Name} went offline"));
-                    break;
-            }
+		// called when a message is received
+		public void OnBroadcast(object sender, NewBroadcastEventArgs e) =>
+			Dispatcher.BeginInvoke(new Action(() =>
+				Broadcast_NewBroadcast(sender, e)
+			));
 
-            switch (e.message.Event) // idk idk idk (extra edge case stuff for event.join
-            {
-                case Event.Join:
-                    RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
-                    msg.Event = Event.Discovery;
-                    broadcast.Send(msg, port);
-                    
-                    messages.Add(new LocalMessage($"{c.Name} joined"));
-                    break;
-            }
-        }
+		// which actually calls this
+		private void Broadcast_NewBroadcast(object sender, NewBroadcastEventArgs e)
+		{
+			IPAddress remoteIP = IPAddress.Parse(e.message.Words);
+			Client c = new Client(epLocal, remoteIP, port, e.message.Sender);
 
-        private void OnClientOffline(object sender, EventArgs e)
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-                Client_Offline((Client)sender)
-            ));
-        }
+			switch (e.message.Event) // Add clients
+			{
+				case Event.Join: // Someone else joined
+				case Event.Discovery: // Response to my join request (other people exist)
+					// check if client already exists before adding
+					if (!clients.Contains(c)) {
+						c.NewMessage += OnMessage;
+						c.Offline += OnClientOffline;
+						clients.Add(c);
+					}
+					break;
+				case Event.Leave:
+					clients.Remove(c);
+					messages.Add(new LocalMessage($"{c.Name} went offline"));
+					break;
+			}
 
-        private void Client_Offline(Client sender)
-        {
-            clients.Remove(sender); // wack, someone went offline :/
-            messages.Add(new LocalMessage($"{sender.Name} is offline"));
-        }
+			switch (e.message.Event) // idk idk idk (extra edge case stuff for event.join
+			{
+				case Event.Join:
+					RemoteMessage msg = new RemoteMessage(getLocalIP().MapToIPv4().ToString(), nameTextBox.Text);
+					msg.Event = Event.Discovery;
+					broadcast.Send(msg, port);
+					
+					messages.Add(new LocalMessage($"{c.Name} joined"));
+					break;
+			}
+		}
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            try
-            {
-                RemoteMessage message = new RemoteMessage("", nameTextBox.Text); //we are the sender
-                message.Event = Event.Leave;
+		private void OnClientOffline(object sender, EventArgs e)
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+				Client_Offline((Client)sender)
+			));
+		}
 
-                for (int i = 0; i < clients.Count; i++)
-                {
-                    clients[i].SendMessage(message);
-                }
-            }
-            catch (SocketException ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-        }
+		private void Client_Offline(Client sender)
+		{
+			clients.Remove(sender); // wack, someone went offline :/
+		}
 
-        // TODO: better offline messages and stuffs
-        // also send message objects better
-        // should self also be another client object?
-    }
+		// TODO: better offline events and stuffs
+		// Client should throw exception if can't send (replaces client offline event)
+		// Client leave event
+		// also send message objects better: void sendMessage(RemoteMessage message, Client destination) { ... }
+		// should self be a LocalClient, and everyone else be RemoteClients? (both extend from abstract Client class)
+	}
 }
