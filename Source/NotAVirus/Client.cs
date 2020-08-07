@@ -42,7 +42,7 @@ namespace NotAVirus
 
         public RemoteClient(LocalClient binding, IPAddress ip, ushort port = 3012, string name = "Other")
 		{
-			Name = Name;
+			Name = name;
 			EndPoint = new IPEndPoint(ip, port);
 
 			Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -54,6 +54,13 @@ namespace NotAVirus
 			byte[] buffer = new byte[1500];
 			Socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref EndPoint, new AsyncCallback(MessageCallBack), buffer);
 		}
+
+        public void Close()
+        {
+            Socket.Shutdown(SocketShutdown.Both);
+            //Socket.Disconnect(true);
+            Socket.Close();
+        }
 
 		protected virtual void OnNewMessage(NewMessageEventArgs e)
 		{
@@ -68,10 +75,21 @@ namespace NotAVirus
             {
                 size = Socket.EndReceiveFrom(result, ref EndPoint);
             }
-            catch (SocketException)
+            catch (Exception ex)
             {
                 //if (ex.SocketErrorCode == SocketError.ConnectionReset) //connection was forcibly closed by the remote host
-                Leave(this, new EventArgs());
+                if (ex is SocketException)
+                {
+                    Leave(this, new EventArgs());
+                }
+                else if (ex is ObjectDisposedException)
+                {
+                    return; // socket is closed
+                }
+                else
+                {
+                    throw;
+                }
             }
 			
 			if (size > 0) // there's a message
@@ -97,6 +115,7 @@ namespace NotAVirus
 				}
 			}
 
+            // could this be moved to before message processing?
 			byte[] buffer = new byte[1500];
 			Socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref EndPoint, new AsyncCallback(MessageCallBack), buffer);
 		}

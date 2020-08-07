@@ -61,12 +61,12 @@ namespace NotAVirus
 				args.message = new RemoteMessage(received);
 				
 				// TODO: seems dodgy, fix it.
-				if (args.message.Event != Event.Join || args.message.Event != Event.Discovery)
+				if (args.message.Event != Event.Join && args.message.Event != Event.Discovery)
 				{
 					return; // nuh uh - nope. should be a message directly to clients
 				}
 				// creating another new localclient seems real dodgy
-				args.message.Sender = new RemoteClient(new LocalClient(port), groupEP.Address, port, args.message.Contents);
+				args.message.Sender = new RemoteClient(new LocalClient(port), groupEP.Address, port, args.message.Words);
 
 				switch (args.message.Event)
 				{

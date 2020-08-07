@@ -119,6 +119,7 @@ namespace NotAVirus
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
+            //MessageBox.Show("goodbye");
 			try
 			{
 				RemoteMessage message = new RemoteMessage(""); //we are the sender
@@ -188,6 +189,7 @@ namespace NotAVirus
 
 		private void Client_Leave(RemoteClient sender)
 		{
+            sender.Close();
 			clients.Remove(sender); // wack, someone went offline :/
 			messages.Add(new InternalMessage($"{sender.Name} went offline"));
 		}
