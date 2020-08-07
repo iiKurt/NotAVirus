@@ -53,7 +53,7 @@ namespace NotAVirus
 			}
 		}
 
-		private void addClient(RemoteClient client)
+		private void addClient(RemoteClient client) // could be merged into some list updated event?
 		{
 			// check if client already exists before adding
 			if (!clients.Contains(client))
@@ -84,7 +84,7 @@ namespace NotAVirus
 			try
 			{
 				// broadcast that we are online
-				broadcast = new Broadcast(self.IP, port);
+				broadcast = new Broadcast(self, port);
 				broadcast.Join += OnJoin;
 				broadcast.Discovery += OnDiscovery;
 
@@ -149,13 +149,21 @@ namespace NotAVirus
 		// which actually calls this
 		private void Broadcast_Join(object sender, NewBroadcastEventArgs e)
 		{
-			addClient(e.message.Sender);
+			try
+			{
+				addClient(e.message.Sender);
 
-			RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
-			msg.Event = Event.Discovery;
-			broadcast.Send(msg, port);
+				RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
+				msg.Event = Event.Discovery;
+				broadcast.Send(msg, port);
 
-			messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
+				messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
+			}
+			catch (Exception ex) // Just for debugging
+			{
+				MessageBox.Show(ex.Message);
+				throw; // for the debugger
+			}
 		}
 		
 		// reponse to my join message (other people exist)

@@ -11,12 +11,12 @@ namespace NotAVirus
 		public event EventHandler<NewBroadcastEventArgs> Discovery;
 
 		UdpClient client;
-		IPAddress selfIP;
+		LocalClient self;
 		ushort port;
 
-		public Broadcast(IPAddress selfIP, ushort port = 11000)
+		public Broadcast(LocalClient self, ushort port = 11000)
 		{
-			this.selfIP = selfIP;
+			this.self = self;
 			this.port = port;
 
 			//Client uses as receive udp client
@@ -55,7 +55,7 @@ namespace NotAVirus
 			client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 
 			//Process the message
-			if (!groupEP.Address.Equals(selfIP)) // message is from someone else
+			if (!groupEP.Address.Equals(self.IP)) // message is from someone else
 			{
 				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
 				args.message = new RemoteMessage(received);
@@ -66,7 +66,7 @@ namespace NotAVirus
 					return; // nuh uh - nope. should be a message directly to clients
 				}
 				// creating another new localclient seems real dodgy
-				args.message.Sender = new RemoteClient(new LocalClient(port), groupEP.Address, port, args.message.Words);
+				args.message.Sender = new RemoteClient(self, groupEP.Address, port, args.message.Words);
 
 				switch (args.message.Event)
 				{

@@ -46,7 +46,7 @@ namespace NotAVirus
 			EndPoint = new IPEndPoint(ip, port);
 
 			Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-			Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+			//Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
 			Socket.Bind(binding.EndPoint);
 			Socket.Connect(EndPoint);
