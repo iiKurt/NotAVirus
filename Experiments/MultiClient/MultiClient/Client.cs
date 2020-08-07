@@ -12,43 +12,49 @@ namespace MultiClient
 
     public class LocalClient : Client
     {
-        public IPAddress IP { get; private set; }
-		public IPEndPoint EndPoint; // cannot be property or Socket receiving doesn't like it
+		public IPEndPoint EP; // cannot be property or Socket receiving doesn't like it
 
 		public LocalClient(ushort port)
         {
+			// Get the local IP
+			// Could 
             IPHostEntry host;
             host = Dns.GetHostEntry(Dns.GetHostName());
 
-            IP = IPAddress.Parse("127.0.0.1"); // in case we can't find an IP
+            IPAddress theIP = IPAddress.Loopback; // in case we can't find an IP
+			// TODO: could the IPAddress.Loopback be used instead of all this crap? v v v
             foreach (IPAddress ip in host.AddressList)
             {
                 if (ip.AddressFamily == AddressFamily.InterNetwork)
                 {
-                    IP = ip;
+					theIP = ip;
                     break;
                 }
             }
 
-            EndPoint = new IPEndPoint(IP, port);
+            EP = new IPEndPoint(theIP, port);
         }
     }
 
 	public class RemoteClient : Client
 	{
 		private UdpClient client;
-		private LocalClient binding;
+		private IPEndPoint localEP;
+		private IPEndPoint remoteEP;
 
 		public event EventHandler<NewMessageEventArgs> NewMessage;
-        public event EventHandler<EventArgs> Leave;
 
-        public RemoteClient(LocalClient binding, IPAddress ip, ushort port = 3012, string name = "Other")
+        public RemoteClient(LocalClient localBinding, IPAddress ip, ushort port = 3012, string name = "Other")
 		{
-			this.Name = name;
-			this.binding = binding;
+			Name = name;
+			localEP = localBinding.EP;
+			remoteEP = new IPEndPoint(ip, port);
 
-			client = new UdpClient(port);
-			
+			// https://stackoverflow.com/questions/9120050/connecting-two-udp-clients-to-one-port-send-and-receive
+			client = new UdpClient();
+			client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+			client.Client.Bind(localEP);
+
 			client.BeginReceive(new AsyncCallback(MessageCallBack), null);
 		}
 
@@ -60,7 +66,7 @@ namespace MultiClient
 
 		private void MessageCallBack(IAsyncResult result)
 		{
-			byte[] receivedData = client.EndReceive(result, ref binding.EndPoint);
+			byte[] receivedData = client.EndReceive(result, ref remoteEP);
 			string message = Name + ": " + Encoding.ASCII.GetString(receivedData);
 				
 			NewMessageEventArgs args = new NewMessageEventArgs();
@@ -74,7 +80,10 @@ namespace MultiClient
 		{
 			byte[] msg = Encoding.ASCII.GetBytes(message);
 
-			client.Send(msg, msg.Length);
+			//client.Send(msg, msg.Length);
+			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+			s.SendTo(msg, remoteEP);
 		}
 	}
 

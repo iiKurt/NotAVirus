@@ -85,8 +85,8 @@ namespace NotAVirus
 		{
 			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-			IPAddress broadcast = IPAddress.Parse("192.168.255.255");
-			IPEndPoint ep = new IPEndPoint(broadcast, port);
+			//IPAddress broadcast = IPAddress.Parse("192.168.255.255");
+			IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
 
 			s.SendTo(message.Serialize(), ep);
 
