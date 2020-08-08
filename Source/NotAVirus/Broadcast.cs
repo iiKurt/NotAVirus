@@ -11,12 +11,13 @@ namespace NotAVirus
 		public event EventHandler<NewBroadcastEventArgs> Discovery;
 
 		UdpClient client;
-		LocalClient self;
+		LocalClient local;
+		IPAddress address;
 		ushort port;
 
-		public Broadcast(LocalClient self, ushort port = 11000)
+		public Broadcast(LocalClient local, ushort port = 11000)
 		{
-			this.self = self;
+			this.local = local;
 			this.port = port;
 
 			//Client uses as receive udp client
@@ -55,7 +56,7 @@ namespace NotAVirus
 			client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 
 			//Process the message
-			if (!groupEP.Address.Equals(self.EP.Address)) // message is from someone else
+			if (!groupEP.Address.Equals(local.EP.Address)) // message is from someone else
 			{
 				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
 				args.message = new RemoteMessage(received);
@@ -65,8 +66,8 @@ namespace NotAVirus
 				{
 					return; // nuh uh - nope. should be a message directly to clients
 				}
-				// creating another new localclient seems real dodgy
-				args.message.Sender = new RemoteClient(self, groupEP.Address, port, args.message.Words);
+				// creating another new remoteclient seems real dodgy
+				args.message.Sender = new RemoteClient(local, groupEP.Address, port, args.message.Words);
 
 				switch (args.message.Event)
 				{
@@ -84,13 +85,15 @@ namespace NotAVirus
 		public void Send(RemoteMessage message, int port)
 		{
 			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-			IPAddress broadcast = IPAddress.Parse("192.168.255.255"); //IPAddress.Any?
-			IPEndPoint ep = new IPEndPoint(broadcast, port);
+			
+			// convert X.X.X.X -> X.X.255.255
+			byte[] ip = local.EP.Address.GetAddressBytes();
+			ip[2] = 255;
+			ip[3] = 255;
+			address = new IPAddress(ip);
+			IPEndPoint ep = new IPEndPoint(address, port);
 
 			s.SendTo(message.Serialize(), ep);
-
-			Console.WriteLine($"Message sent to the broadcast address ({ep.Port})");
 		}
 	}
 

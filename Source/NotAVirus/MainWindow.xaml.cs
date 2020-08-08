@@ -81,8 +81,8 @@ namespace NotAVirus
 
 		private void connectButton_Click(object sender, RoutedEventArgs e)
 		{
-			try
-			{
+			/*try
+			{*/
 				// broadcast that we are online
 				broadcast = new Broadcast(self, port);
 				broadcast.Join += OnJoin;
@@ -104,11 +104,11 @@ namespace NotAVirus
 				sendButton.IsEnabled = true;
 				composeTextBox.IsEnabled = true;
 				composeTextBox.Focus();
-			}
+			/*}
 			catch (SocketException ex)
 			{
 			    MessageBox.Show(ex.ToString());
-			}
+			}*/
 		}
 		
 		private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
