@@ -55,7 +55,7 @@ namespace NotAVirus
 			client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 
 			//Process the message
-			if (!groupEP.Address.Equals(self.IP)) // message is from someone else
+			if (!groupEP.Address.Equals(self.EP.Address)) // message is from someone else
 			{
 				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
 				args.message = new RemoteMessage(received);
@@ -85,8 +85,8 @@ namespace NotAVirus
 		{
 			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-			//IPAddress broadcast = IPAddress.Parse("192.168.255.255");
-			IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
+			IPAddress broadcast = IPAddress.Parse("192.168.255.255"); //IPAddress.Any?
+			IPEndPoint ep = new IPEndPoint(broadcast, port);
 
 			s.SendTo(message.Serialize(), ep);
 

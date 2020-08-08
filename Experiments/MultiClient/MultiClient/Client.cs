@@ -81,6 +81,8 @@ namespace MultiClient
 			byte[] msg = Encoding.ASCII.GetBytes(message);
 
 			//client.Send(msg, msg.Length);
+			// would be nice to somehow avoid creating a new socket just to send a message
+			// I hear that sometimes people create a persistent second udpclient just for sending/receiving
 			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
 			s.SendTo(msg, remoteEP);
