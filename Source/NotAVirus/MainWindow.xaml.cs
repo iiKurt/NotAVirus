@@ -84,6 +84,7 @@ namespace NotAVirus
 			/*try
 			{*/
 				// broadcast that we are online
+				/* for testing purposes
 				broadcast = new Broadcast(self, port);
 				broadcast.Join += OnJoin;
 				broadcast.Discovery += OnDiscovery;
@@ -91,7 +92,11 @@ namespace NotAVirus
 				RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
 				msg.Event = Event.Join;
 
-				broadcast.Send(msg, port);
+				broadcast.Send(msg, port); */
+				
+				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.10"), 3012, "test1"));
+				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.11"), 3012, "test2"));
+				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.12"), 3012, "test3"));
 
 				// we are 'connected'
 
