@@ -12,18 +12,21 @@ namespace NotAVirus
 
 		UdpClient client;
 		LocalClient local;
-		IPAddress address;
 		ushort port;
+        IPEndPoint groupEP;
 
-		public Broadcast(LocalClient local, ushort port = 11000)
+        public Broadcast(LocalClient local, ushort port = 11000)
 		{
 			this.local = local;
 			this.port = port;
+            groupEP = new IPEndPoint(IPAddress.Any, port);
 
-			//Client uses as receive udp client
-			client = new UdpClient(port);
+            //Client uses as receive udp client
+            client = new UdpClient();
+            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            client.Client.Bind(groupEP);
 
-			try
+            try
 			{
 				client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 			}
@@ -49,7 +52,6 @@ namespace NotAVirus
 		//This is called when a message is received (before any events are called)
 		private void OnBroadcastMessage(IAsyncResult res)
 		{
-			IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, port);
 			byte[] received = client.EndReceive(res, ref groupEP);
 
 			// Begin receiving A$AP
@@ -79,7 +81,9 @@ namespace NotAVirus
 						Discovery(this, args);
 						break;
 				}
-			}
+                Console.WriteLine(args.message.Words);
+                Console.WriteLine(args.message.Sender.Name);
+            }
 		}
 
 		public void Send(RemoteMessage message, int port)
@@ -90,8 +94,7 @@ namespace NotAVirus
 			byte[] ip = local.EP.Address.GetAddressBytes();
 			ip[2] = 255;
 			ip[3] = 255;
-			address = new IPAddress(ip);
-			IPEndPoint ep = new IPEndPoint(address, port);
+			IPEndPoint ep = new IPEndPoint(new IPAddress(ip), port);
 
 			s.SendTo(message.Serialize(), ep);
 		}

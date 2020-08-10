@@ -10,6 +10,7 @@ namespace MultiClient
 
 		static LocalClient self = new LocalClient(port);
 		static List<RemoteClient> clients = new List<RemoteClient>();
+        static Broadcast broadcast = new Broadcast();
 
 		static void Main(string[] args)
 		{

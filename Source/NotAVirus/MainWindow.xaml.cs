@@ -4,7 +4,6 @@ using System.Windows.Input;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 
-using System.Net;
 using System.Net.Sockets;
 
 namespace NotAVirus
@@ -81,10 +80,10 @@ namespace NotAVirus
 
 		private void connectButton_Click(object sender, RoutedEventArgs e)
 		{
-			/*try
+			/*try // commented out for testing
 			{*/
 				// broadcast that we are online
-				/* for testing purposes
+				
 				broadcast = new Broadcast(self, port);
 				broadcast.Join += OnJoin;
 				broadcast.Discovery += OnDiscovery;
@@ -92,11 +91,11 @@ namespace NotAVirus
 				RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
 				msg.Event = Event.Join;
 
-				broadcast.Send(msg, port); */
+				broadcast.Send(msg, port);
 				
-				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.10"), 3012, "test1"));
+				/*clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.10"), 3012, "test1"));
 				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.11"), 3012, "test2"));
-				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.12"), 3012, "test3"));
+				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.12"), 3012, "test3"));*/
 
 				// we are 'connected'
 
@@ -171,7 +170,7 @@ namespace NotAVirus
 			}
 		}
 		
-		// reponse to my join message (other people exist)
+		// response to my join message (other people exist)
 		public void OnDiscovery(object sender, NewBroadcastEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
 				addClient(e.message.Sender)
@@ -222,8 +221,5 @@ namespace NotAVirus
 
 		// rundown:
 		// broadcast fixing and whatnot
-		// direct messages
-		// encryption
-		// if I have time and it's secure: private rooms
 	}
 }
