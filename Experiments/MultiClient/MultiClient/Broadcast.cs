@@ -1,4 +1,5 @@
-﻿using System;
+﻿// I don't even know how this even works but it does, so don't touch it or the whole thing breaks
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,37 +9,25 @@ namespace MultiClient
     public class Broadcast
     {
         // EventThing
-        public event EventHandler<NewBroadcastEventArgs> Join;
-        public event EventHandler<NewBroadcastEventArgs> Discovery;
         public event EventHandler<NewBroadcastEventArgs> Message;
 
-        IPEndPoint local;
-        IPEndPoint remote;
-        UdpClient sender;
-        UdpClient receiver; // TODO: would be nice to have this as socket
+        UdpClient client;
+        IPEndPoint localEP;
+        IPEndPoint remoteEP;
 
         public Broadcast(IPAddress ip, ushort port = 11000)
         {
-            local = new IPEndPoint(ip, port);
+            localEP = new IPEndPoint(ip, port);
+            remoteEP = new IPEndPoint(IPAddress.Any, port);
 
-            // convert X.X.X.X -> X.X.255.255
-            byte[] broadcast = ip.GetAddressBytes();
-            broadcast[2] = 255;
-            broadcast[3] = 255;
-            remote = new IPEndPoint(new IPAddress(broadcast), port);
-
-            sender = new UdpClient();
-            sender.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            sender.Client.Bind(local);
-
-            // https://stackoverflow.com/questions/9120050/connecting-two-udp-clients-to-one-port-send-and-receive
-            receiver = new UdpClient();
-            receiver.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            receiver.Client.Bind(local);
+            //Client uses as receive udp client
+            client = new UdpClient();
+            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            client.Client.Bind(remoteEP);
 
             try
             {
-                receiver.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
+                client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
             }
             catch (Exception e)
             {
@@ -46,47 +35,43 @@ namespace MultiClient
             }
         }
 
-        #region Events
         // EventThing
-        protected virtual void OnJoin(NewBroadcastEventArgs e)
-        {
-            EventHandler<NewBroadcastEventArgs> handler = Join;
-            handler?.Invoke(this, e);
-        }
-
-        protected virtual void OnDiscovery(NewBroadcastEventArgs e)
-        {
-            EventHandler<NewBroadcastEventArgs> handler = Discovery;
-            handler?.Invoke(this, e);
-        }
         protected virtual void OnMessage(NewBroadcastEventArgs e)
         {
             EventHandler<NewBroadcastEventArgs> handler = Message;
             handler?.Invoke(this, e);
         }
-        #endregion
 
         //This is called when a message is received (before any events are called)
         private void OnBroadcastMessage(IAsyncResult res)
         {
-            byte[] received = receiver.EndReceive(res, ref remote);
+            byte[] received = client.EndReceive(res, ref remoteEP);
 
             // Begin receiving A$AP
-            receiver.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
+            client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
 
             //Process the message
-            if (!remote.Address.Equals(local.Address)) // ensure message is from someone else
+            if (!remoteEP.Address.Equals(localEP.Address)) // message is from someone else
             {
                 NewBroadcastEventArgs args = new NewBroadcastEventArgs();
                 args.message = Encoding.ASCII.GetString(received);
-                OnMessage(args); // raise event
+                
+                // raise events
+                Message(this, args);
             }
         }
 
         public void Send(string message)
         {
-            byte[] msg = Encoding.ASCII.GetBytes(message);
-            sender.Send(msg, msg.Length, remote);
+            Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            // convert X.X.X.X -> X.X.255.255
+            byte[] ip = localEP.Address.GetAddressBytes();
+            ip[2] = 255;
+            ip[3] = 255;
+            IPEndPoint ep = new IPEndPoint(new IPAddress(ip), localEP.Port);
+
+            s.SendTo(Encoding.ASCII.GetBytes(message), ep);
         }
     }
 

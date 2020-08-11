@@ -55,7 +55,7 @@ namespace MultiClient
 			client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 			client.Client.Bind(localEP);
 
-			client.BeginReceive(new AsyncCallback(MessageCallBack), null);
+			//client.BeginReceive(new AsyncCallback(MessageCallBack), null);
 		}
 
 		protected virtual void OnNewMessage(NewMessageEventArgs e)
