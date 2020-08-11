@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace NotAVirus
 {
@@ -69,7 +68,7 @@ namespace NotAVirus
 			EventHandler<NewMessageEventArgs> handler = Message;
 			handler?.Invoke(this, e);
 		}
-        protected virtual void OnLeave(NewMessageEventArgs e)
+        protected virtual void OnLeave(EventArgs e)
         {
             EventHandler<EventArgs> handler = Leave;
             handler?.Invoke(this, e);
@@ -87,7 +86,7 @@ namespace NotAVirus
 				//if (ex.SocketErrorCode == SocketError.ConnectionReset) //connection was forcibly closed by the remote host
 				if (ex is SocketException)
 				{
-					Leave(this, new EventArgs());
+					OnLeave(new EventArgs());
 					return;
 				}
 				else if (ex is ObjectDisposedException)
@@ -109,7 +108,7 @@ namespace NotAVirus
 			switch (message.Event)
 			{
 				case Event.Leave:
-					Leave(this, new EventArgs());
+					OnLeave(new EventArgs());
 					break;
 				case Event.Message:
 					NewMessageEventArgs args = new NewMessageEventArgs();
@@ -124,12 +123,13 @@ namespace NotAVirus
 		{
 			byte[] msg = message.Serialize();
 
-			//client.Send(msg, msg.Length);
+            client.Connect(remoteEP);
+			client.Send(msg, msg.Length);
 			// would be nice to somehow avoid creating a new socket just to send a message
 			// I hear that sometimes people create a persistent second udpclient just for sending/receiving
-			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+			//Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-			s.SendTo(msg, remoteEP);
+			//s.SendTo(msg, remoteEP);
 		}
 	}
 

@@ -76,11 +76,11 @@ namespace NotAVirus
 
 		private void connectButton_Click(object sender, RoutedEventArgs e)
 		{
-			/*try // commented out for testing
-			{*/
-				// broadcast that we are online
-				
-				broadcast = new Broadcast(self.EP.Address, port);
+			try // commented out for testing
+			{
+                // broadcast that we are online
+
+                broadcast = new Broadcast(self.EP.Address, port);
                 broadcast.Join += OnBroadcastJoin;
                 broadcast.Discovery += OnBroadcastDiscovery;
 				broadcast.Message += OnMessage;
@@ -104,20 +104,27 @@ namespace NotAVirus
 				sendButton.IsEnabled = true;
 				composeTextBox.IsEnabled = true;
 				composeTextBox.Focus();
-			/*}
+			}
 			catch (SocketException ex)
 			{
 			    MessageBox.Show(ex.ToString());
-			}*/
+                throw ex; // for debugging
+			}
 		}
-		
-		private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-		{ // scroll any new items into view
-			messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
-			messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
-		}
+        
+        private void clientsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // https://stackoverflow.com/a/4888542
+            var client = ((FrameworkElement)e.OriginalSource).DataContext as RemoteClient;
+            if (client != null)
+            {
+                RemoteMessage msg = new RemoteMessage("DM test");
+                client.Send(msg);
+                MessageBox.Show("Sending test message to " + client.Name);
+            }
+        }
 
-		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
             //MessageBox.Show("goodbye");
 			try
@@ -134,7 +141,14 @@ namespace NotAVirus
 			{
 				MessageBox.Show(ex.ToString());
 			}
-		}
+        }
+
+        // not really a WPF event
+        private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        { // scroll any new items into view
+            messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
+            messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
+        }
 
         #endregion
 
@@ -199,7 +213,8 @@ namespace NotAVirus
 		// which actually just calls this
 		public void Client_Message(RemoteClient from, RemoteMessage message)
 		{
-			//messages.Add(message);
+            //messages.Add(message);
+            MessageBox.Show(message.Contents);
 		}
 
 		private void OnClientLeave(object sender, EventArgs e)
@@ -216,22 +231,22 @@ namespace NotAVirus
 			messages.Add(new InternalMessage($"{sender.Name} went offline"));
 		}
 
-		#endregion
+        #endregion
 
-		// TODO: test if any of this actually works <==============
+        // TODO: test if any of this actually works <==============
 
-		// abstract broadcast away enough so that Join and Discovery events could be moved into RemoteClient?!
-		// check client MessageCallback switch statment for details
+        // abstract broadcast away enough so that Join and Discovery events could be moved into RemoteClient?!
+        // check client MessageCallback switch statment for details
 
-		// could Join and Discovery messages actually be a different class to RemoteMessage?
-		// ^ that would actually be real good to fix the dodgyness of the broadcast assigning sender to broadcast messages
-		// have a InfoMessage class where there is a string name, IP (not transmitted over network), and RSA keys too
-		// ^ yes real good idea lets do it sometime
-		// Leave messages could be broadcast only but ehh (doesn't really matter at all)
+        // could Join and Discovery messages actually be a different class to RemoteMessage?
+        // ^ that would actually be real good to fix the dodgyness of the broadcast assigning sender to broadcast messages
+        // have a InfoMessage class where there is a string name, IP (not transmitted over network), and RSA keys too
+        // ^ yes real good idea lets do it sometime
+        // Leave messages could be broadcast only but ehh (doesn't really matter at all)
 
-		// rundown:
-		// broadcast fixing and whatnot
+        // rundown:
+        // broadcast fixing and whatnot
 
         // TODO: how to handle calling events that are not assigned
-	}
+    }
 }
