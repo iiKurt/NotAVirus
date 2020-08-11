@@ -1,108 +1,84 @@
-﻿using System;
+﻿// I don't even know how this even works but it does, so don't touch it or the whole thing breaks
+using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace NotAVirus
 {
-	public class Broadcast
-	{
-		// EventThing
-		public event EventHandler<NewBroadcastEventArgs> Join;
-		public event EventHandler<NewBroadcastEventArgs> Discovery;
+    public class Broadcast
+    {
+        // EventThing
+        public event EventHandler<NewBroadcastEventArgs> Message;
 
-		UdpClient client;
-		LocalClient local;
-		ushort port;
-        IPEndPoint groupEP;
+        UdpClient client;
+        IPEndPoint localEP;
+        IPEndPoint remoteEP;
 
-        public Broadcast(LocalClient local, ushort port = 11000)
-		{
-			this.local = local;
-			this.port = port;
-            groupEP = new IPEndPoint(IPAddress.Any, port);
+        public Broadcast(IPAddress ip, ushort port = 11000)
+        {
+            localEP = new IPEndPoint(ip, port);
+            remoteEP = new IPEndPoint(IPAddress.Any, port);
 
             //Client uses as receive udp client
             client = new UdpClient();
             client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            client.Client.Bind(groupEP);
+            client.Client.Bind(remoteEP);
 
             try
-			{
-				client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(e.ToString());
-			}
-		}
-
-		// EventThing
-		protected virtual void OnJoin(NewBroadcastEventArgs e)
-		{
-			EventHandler<NewBroadcastEventArgs> handler = Join;
-			handler?.Invoke(this, e);
-		}
-		
-		protected virtual void OnDiscovery(NewBroadcastEventArgs e)
-		{
-			EventHandler<NewBroadcastEventArgs> handler = Discovery;
-			handler?.Invoke(this, e);
-		}
-
-		//This is called when a message is received (before any events are called)
-		private void OnBroadcastMessage(IAsyncResult res)
-		{
-			byte[] received = client.EndReceive(res, ref groupEP);
-
-			// Begin receiving A$AP
-			client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
-
-			//Process the message
-			if (!groupEP.Address.Equals(local.EP.Address)) // message is from someone else
-			{
-				NewBroadcastEventArgs args = new NewBroadcastEventArgs();
-				args.message = new RemoteMessage(received);
-				
-				// TODO: seems dodgy, fix it.
-				if (args.message.Event != Event.Join && args.message.Event != Event.Discovery)
-				{
-					return; // nuh uh - nope. should be a message directly to clients
-				}
-				// creating another new remoteclient seems real dodgy
-				args.message.Sender = new RemoteClient(local, groupEP.Address, port, args.message.Words);
-
-				switch (args.message.Event)
-				{
-					// raise events
-					case Event.Join:
-						Join(this, args);
-						break;
-					case Event.Discovery:
-						Discovery(this, args);
-						break;
-				}
-                Console.WriteLine(args.message.Words);
-                Console.WriteLine(args.message.Sender.Name);
+            {
+                client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
             }
-		}
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+        }
 
-		public void Send(RemoteMessage message, int port)
-		{
-			Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-			
-			// convert X.X.X.X -> X.X.255.255
-			byte[] ip = local.EP.Address.GetAddressBytes();
-			ip[2] = 255;
-			ip[3] = 255;
-			IPEndPoint ep = new IPEndPoint(new IPAddress(ip), port);
+        // EventThing
+        protected virtual void OnMessage(NewBroadcastEventArgs e)
+        {
+            EventHandler<NewBroadcastEventArgs> handler = Message;
+            handler?.Invoke(this, e);
+        }
 
-			s.SendTo(message.Serialize(), ep);
-		}
-	}
+        //This is called when a message is received (before any events are called)
+        private void OnBroadcastMessage(IAsyncResult res)
+        {
+            byte[] received = client.EndReceive(res, ref remoteEP);
 
-	// EventThing
-	public class NewBroadcastEventArgs : EventArgs
-	{
-		public RemoteMessage message;
-	}
+            // Begin receiving A$AP
+            client.BeginReceive(new AsyncCallback(OnBroadcastMessage), null);
+
+            //Process the message
+            if (!remoteEP.Address.Equals(localEP.Address)) // message is from someone else
+            {
+                NewBroadcastEventArgs args = new NewBroadcastEventArgs();
+                args.message = remoteEP.Address.ToString() + ": ";
+                args.message += Encoding.ASCII.GetString(received);
+
+                // raise events
+                Message(this, args);
+            }
+        }
+
+        public void Send(string message)
+        {
+            Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            // convert X.X.X.X -> X.X.255.255
+            byte[] ip = localEP.Address.GetAddressBytes();
+            ip[2] = 255;
+            ip[3] = 255;
+            IPEndPoint ep = new IPEndPoint(new IPAddress(ip), localEP.Port);
+
+            s.SendTo(Encoding.ASCII.GetBytes(message), ep);
+        }
+    }
+
+    // EventThing
+    public class NewBroadcastEventArgs : EventArgs
+    {
+        public string message;
+    }
 }

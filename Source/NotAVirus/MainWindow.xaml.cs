@@ -35,12 +35,7 @@ namespace NotAVirus
 		{
 			try
 			{
-				RemoteMessage message = new RemoteMessage(composeTextBox.Text); //we are the sender
-
-				for (int i = 0; i < clients.Count; i++)
-				{
-					clients[i].Send(message);
-				}
+                broadcast.Send(composeTextBox.Text);
 
 				LocalMessage lmessage = new LocalMessage(composeTextBox.Text, "You");
 				messages.Add(lmessage);
@@ -84,14 +79,8 @@ namespace NotAVirus
 			{*/
 				// broadcast that we are online
 				
-				broadcast = new Broadcast(self, port);
-				broadcast.Join += OnJoin;
-				broadcast.Discovery += OnDiscovery;
-
-				RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
-				msg.Event = Event.Join;
-
-				broadcast.Send(msg, port);
+				broadcast = new Broadcast(self.EP.Address, port);
+				broadcast.Message += OnMessage;
 				
 				/*clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.10"), 3012, "test1"));
 				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.11"), 3012, "test2"));
@@ -144,37 +133,20 @@ namespace NotAVirus
 
 		#region Broadcast
 
-		// called when someone joins the chat
-		public void OnJoin(object sender, NewBroadcastEventArgs e) =>
+		// called when new broadcast arrives
+		public void OnMessage(object sender, NewBroadcastEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
-				Broadcast_Join(sender, e)
+                Broadcast_Message(sender, e)
 			));
 
 		// which actually calls this
-		private void Broadcast_Join(object sender, NewBroadcastEventArgs e)
+		private void Broadcast_Message(object sender, NewBroadcastEventArgs e)
 		{
-			try
-			{
-				addClient(e.message.Sender);
+			RemoteMessage msg = new RemoteMessage(e.message);
+            messages.Add(msg);
 
-				RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
-				msg.Event = Event.Discovery;
-				broadcast.Send(msg, port);
-
-				messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
-			}
-			catch (Exception ex) // Just for debugging
-			{
-				MessageBox.Show(ex.Message);
-				throw; // for the debugger
-			}
+			//messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
 		}
-		
-		// response to my join message (other people exist)
-		public void OnDiscovery(object sender, NewBroadcastEventArgs e) =>
-			Dispatcher.BeginInvoke(new Action(() =>
-				addClient(e.message.Sender)
-			));
 
 		#endregion
 

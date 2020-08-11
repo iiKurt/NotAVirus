@@ -60,7 +60,7 @@ namespace NotAVirus
 		// override the string in the MessageItem class
 		public new string Contents { get
 			{
-				return Sender.Name + ": " + Words;
+				return "Someone: " + Words;
 			}
 		}
 
