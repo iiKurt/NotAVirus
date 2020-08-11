@@ -60,11 +60,11 @@ namespace NotAVirus
 		// override the string in the MessageItem class
 		public new string Contents { get
 			{
-				return "Someone: " + Words;
+				return Sender.Name + ": " + Words;
 			}
 		}
 
-		public RemoteMessage(string words)
+		public RemoteMessage(string words = "")
 		{
 			this.Event = Event.Message;
             this.Words = words;

@@ -35,7 +35,8 @@ namespace NotAVirus
 		{
 			try
 			{
-                broadcast.Send(composeTextBox.Text);
+                RemoteMessage message = new RemoteMessage(composeTextBox.Text);
+                broadcast.Send(message);
 
 				LocalMessage lmessage = new LocalMessage(composeTextBox.Text, "You");
 				messages.Add(lmessage);
@@ -52,7 +53,7 @@ namespace NotAVirus
 			// check if client already exists before adding
 			if (!clients.Contains(client))
 			{ // Add the client
-				client.NewMessage += OnClientNewMessage;
+				client.Message += OnClientMessage;
 				client.Leave += OnClientLeave;
 				clients.Add(client);
 			}
@@ -80,8 +81,14 @@ namespace NotAVirus
 				// broadcast that we are online
 				
 				broadcast = new Broadcast(self.EP.Address, port);
+                broadcast.Join += OnBroadcastJoin;
+                broadcast.Discovery += OnBroadcastDiscovery;
 				broadcast.Message += OnMessage;
-				
+
+                RemoteMessage join = new RemoteMessage(nameTextBox.Text);
+                join.Event = Event.Join;
+                broadcast.Send(join);
+
 				/*clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.10"), 3012, "test1"));
 				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.11"), 3012, "test2"));
 				clients.Add(new RemoteClient(self, IPAddress.Parse("192.168.1.12"), 3012, "test3"));*/
@@ -129,12 +136,44 @@ namespace NotAVirus
 			}
 		}
 
-		#endregion
+        #endregion
 
-		#region Broadcast
+        #region Broadcast
 
-		// called when new broadcast arrives
-		public void OnMessage(object sender, NewBroadcastEventArgs e) =>
+        // called when someone joins the chat
+        public void OnBroadcastJoin(object sender, NewBroadcastEventArgs e) =>
+            Dispatcher.BeginInvoke(new Action(() =>
+                Broadcast_Join(sender, e)
+            ));
+
+        // which actually calls this
+        private void Broadcast_Join(object sender, NewBroadcastEventArgs e)
+        {
+            try
+            {
+                addClient(e.message.Sender);
+
+                RemoteMessage msg = new RemoteMessage(nameTextBox.Text);
+                msg.Event = Event.Discovery;
+                broadcast.Send(msg);
+
+                messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
+            }
+            catch (Exception ex) // Just for debugging
+            {
+                MessageBox.Show(ex.Message);
+                throw; // for the debugger
+            }
+        }
+
+        // response to my join message (other people exist)
+        public void OnBroadcastDiscovery(object sender, NewBroadcastEventArgs e) =>
+            Dispatcher.BeginInvoke(new Action(() =>
+                addClient(e.message.Sender)
+            ));
+
+        // called when new broadcast arrives
+        public void OnMessage(object sender, NewBroadcastEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
                 Broadcast_Message(sender, e)
 			));
@@ -142,8 +181,7 @@ namespace NotAVirus
 		// which actually calls this
 		private void Broadcast_Message(object sender, NewBroadcastEventArgs e)
 		{
-			RemoteMessage msg = new RemoteMessage(e.message);
-            messages.Add(msg);
+            messages.Add(e.message);
 
 			//messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
 		}
@@ -153,15 +191,15 @@ namespace NotAVirus
 		#region Client Events
 
 		// called when a NORMAL message is received
-		public void OnClientNewMessage(object sender, NewMessageEventArgs e) =>
+		public void OnClientMessage(object sender, NewMessageEventArgs e) =>
 			Dispatcher.BeginInvoke(new Action(() =>
-				Client_NewMessage((RemoteClient)sender, e.message)
+				Client_Message((RemoteClient)sender, e.message)
 			));
 
 		// which actually just calls this
-		public void Client_NewMessage(RemoteClient from, RemoteMessage message)
+		public void Client_Message(RemoteClient from, RemoteMessage message)
 		{
-			messages.Add(message);
+			//messages.Add(message);
 		}
 
 		private void OnClientLeave(object sender, EventArgs e)
@@ -193,5 +231,7 @@ namespace NotAVirus
 
 		// rundown:
 		// broadcast fixing and whatnot
+
+        // TODO: how to handle calling events that are not assigned
 	}
 }

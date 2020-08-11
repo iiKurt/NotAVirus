@@ -9,6 +9,8 @@ namespace NotAVirus
     public class Broadcast
     {
         // EventThing
+        public event EventHandler<NewBroadcastEventArgs> Join;
+        public event EventHandler<NewBroadcastEventArgs> Discovery;
         public event EventHandler<NewBroadcastEventArgs> Message;
 
         UdpClient client;
@@ -36,6 +38,16 @@ namespace NotAVirus
         }
 
         // EventThing
+        protected virtual void OnJoin(NewBroadcastEventArgs e)
+        {
+            EventHandler<NewBroadcastEventArgs> handler = Join;
+            handler?.Invoke(this, e);
+        }
+        protected virtual void OnDiscovery(NewBroadcastEventArgs e)
+        {
+            EventHandler<NewBroadcastEventArgs> handler = Discovery;
+            handler?.Invoke(this, e);
+        }
         protected virtual void OnMessage(NewBroadcastEventArgs e)
         {
             EventHandler<NewBroadcastEventArgs> handler = Message;
@@ -54,15 +66,27 @@ namespace NotAVirus
             if (!remoteEP.Address.Equals(localEP.Address)) // message is from someone else
             {
                 NewBroadcastEventArgs args = new NewBroadcastEventArgs();
-                args.message = remoteEP.Address.ToString() + ": ";
-                args.message += Encoding.ASCII.GetString(received);
+                args.message = new RemoteMessage(received);
+                args.message.Sender = new RemoteClient(localEP, remoteEP);
 
-                // raise events
-                Message(this, args);
+                switch (args.message.Event)
+                {
+                    case Event.Join:
+                        args.message.Sender.Name = args.message.Words;
+                        OnJoin(args);
+                        break;
+                    case Event.Discovery:
+                        args.message.Sender.Name = args.message.Words;
+                        OnDiscovery(args);
+                        break;
+                    case Event.Message:
+                        OnMessage(args);
+                        break;
+                }
             }
         }
 
-        public void Send(string message)
+        public void Send(RemoteMessage message)
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -72,13 +96,13 @@ namespace NotAVirus
             ip[3] = 255;
             IPEndPoint ep = new IPEndPoint(new IPAddress(ip), localEP.Port);
 
-            s.SendTo(Encoding.ASCII.GetBytes(message), ep);
+            s.SendTo(message.Serialize(), ep);
         }
     }
 
     // EventThing
     public class NewBroadcastEventArgs : EventArgs
     {
-        public string message;
+        public RemoteMessage message;
     }
 }

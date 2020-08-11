@@ -42,14 +42,14 @@ namespace NotAVirus
 		private IPEndPoint localEP;
 		private IPEndPoint remoteEP;
 
-		public event EventHandler<NewMessageEventArgs> NewMessage;
+		public event EventHandler<NewMessageEventArgs> Message;
         public event EventHandler<EventArgs> Leave;
 
-		public RemoteClient(LocalClient localBinding, IPAddress ip, ushort port = 3012, string name = "Other")
+		public RemoteClient(IPEndPoint local, IPEndPoint remote, string name = "Other")
 		{
 			Name = name;
-			localEP = localBinding.EP;
-			remoteEP = new IPEndPoint(ip, port);
+            localEP = local;
+            remoteEP = remote;
 
 			// https://stackoverflow.com/questions/9120050/connecting-two-udp-clients-to-one-port-send-and-receive
 			client = new UdpClient();
@@ -64,13 +64,18 @@ namespace NotAVirus
 			client.Close();
         }
 
-		protected virtual void OnNewMessage(NewMessageEventArgs e)
+		protected virtual void OnMessage(NewMessageEventArgs e)
 		{
-			EventHandler<NewMessageEventArgs> handler = NewMessage;
+			EventHandler<NewMessageEventArgs> handler = Message;
 			handler?.Invoke(this, e);
 		}
+        protected virtual void OnLeave(NewMessageEventArgs e)
+        {
+            EventHandler<EventArgs> handler = Leave;
+            handler?.Invoke(this, e);
+        }
 
-		private void MessageCallBack(IAsyncResult result)
+        private void MessageCallBack(IAsyncResult result)
 		{
 			byte[] receivedData = { };
 			try
@@ -109,7 +114,7 @@ namespace NotAVirus
 				case Event.Message:
 					NewMessageEventArgs args = new NewMessageEventArgs();
 					args.message = message;
-					NewMessage(this, args);
+					OnMessage(args); // BIG ERROR HERE
 					break;
 				// what if a client sends us a private join or discovery message..? they dumb dumb
 			}
