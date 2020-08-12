@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 
 using System.Net.Sockets;
+using System.Diagnostics;
 
 namespace NotAVirus
 {
@@ -195,7 +196,7 @@ namespace NotAVirus
 		// which actually calls this
 		private void Broadcast_Message(object sender, NewBroadcastEventArgs e)
 		{
-            messages.Add(e.message);
+            //messages.Add(e.message);
 
 			//messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
 		}
@@ -214,8 +215,10 @@ namespace NotAVirus
 		public void Client_Message(RemoteClient from, RemoteMessage message)
 		{
             //messages.Add(message);
-            MessageBox.Show(message.Contents);
-		}
+            //MessageBox.Show(message.Contents);
+            messages.Add(new InternalMessage(message.Contents));
+            //Debug.WriteLine("New direct message from " + from.Name + "(Sender: " + message.Sender.Name + ") Contents: " + message.Contents);
+        }
 
 		private void OnClientLeave(object sender, EventArgs e)
 		{
