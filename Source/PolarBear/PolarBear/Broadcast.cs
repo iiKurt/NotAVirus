@@ -2,9 +2,8 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
-namespace NotAVirus
+namespace PolarBear
 {
     public class Broadcast
     {
@@ -18,10 +17,10 @@ namespace NotAVirus
         IPEndPoint localEP;
         IPEndPoint remoteEP;
 
-        public Broadcast(IPAddress ip, ushort port = 11000)
+        public Broadcast(IPEndPoint EP)
         {
-            localEP = new IPEndPoint(ip, port);
-            remoteEP = new IPEndPoint(IPAddress.Any, port);
+            localEP = EP;
+            remoteEP = new IPEndPoint(IPAddress.Any, EP.Port);
 
             //Client uses as receive udp client
             client = new UdpClient();
@@ -73,16 +72,13 @@ namespace NotAVirus
             {
                 NewBroadcastEventArgs args = new NewBroadcastEventArgs();
                 args.message = new RemoteMessage(received);
-                args.message.Sender = new RemoteClient(localEP, remoteEP);
 
                 switch (args.message.Event)
                 {
                     case Event.Join:
-                        args.message.Sender.Name = args.message.Words;
                         OnJoin(args);
                         break;
                     case Event.Discovery:
-                        args.message.Sender.Name = args.message.Words;
                         OnDiscovery(args);
                         break;
                     case Event.Leave:

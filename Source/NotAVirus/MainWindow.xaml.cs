@@ -14,6 +14,7 @@ namespace NotAVirus
 	/// </summary>
 	public partial class MainWindow : Window
 	{
+        bool connected = false;
 		const ushort port = 3012;
 		LocalClient self = new LocalClient(port);
 
@@ -85,6 +86,7 @@ namespace NotAVirus
                 broadcast.Join += OnBroadcastJoin;
                 broadcast.Discovery += OnBroadcastDiscovery;
 				broadcast.Message += OnMessage;
+                broadcast.Leave += Broadcast_Leave;
 
                 RemoteMessage join = new RemoteMessage(nameTextBox.Text);
                 join.Event = Event.Join;
@@ -112,7 +114,7 @@ namespace NotAVirus
                 throw ex; // for debugging
 			}
 		}
-        
+
         private void clientsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // https://stackoverflow.com/a/4888542
@@ -127,16 +129,20 @@ namespace NotAVirus
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
+            if (!connected)
+                return;
+
             //MessageBox.Show("goodbye");
 			try
 			{
 				RemoteMessage message = new RemoteMessage(""); //we are the sender
 				message.Event = Event.Leave;
 
-				for (int i = 0; i < clients.Count; i++)
+                broadcast.Send(message);
+				/*for (int i = 0; i < clients.Count; i++)
 				{
 					clients[i].Send(message);
-				}
+				}*/
 			}
 			catch (SocketException ex)
 			{
@@ -186,6 +192,12 @@ namespace NotAVirus
             Dispatcher.BeginInvoke(new Action(() =>
                 addClient(e.message.Sender)
             ));
+        
+        // called upon a client leaving
+        private void Broadcast_Leave(object sender, NewBroadcastEventArgs e) =>
+            Dispatcher.BeginInvoke(new Action(() =>
+                clients.Remove(e.message.Sender)
+            ));
 
         // called when new broadcast arrives
         public void OnMessage(object sender, NewBroadcastEventArgs e) =>
@@ -196,13 +208,14 @@ namespace NotAVirus
 		// which actually calls this
 		private void Broadcast_Message(object sender, NewBroadcastEventArgs e)
 		{
-            //messages.Add(e.message);
+            messages.Add(e.message);
 
 			//messages.Add(new InternalMessage($"{e.message.Sender.Name} joined"));
 		}
 
 		#endregion
 
+        // We don't touch this, okay?
 		#region Client Events
 
 		// called when a NORMAL message is received

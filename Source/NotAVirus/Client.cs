@@ -99,6 +99,11 @@ namespace NotAVirus
 					throw;
 				}
 			}
+            if (remoteEP.Address.Equals(localEP.Address))
+            {
+                return; // some loopback weirdness -- ignore it
+            }
+
 			RemoteMessage message = new RemoteMessage(receivedData);
 			message.Sender = this;
 
