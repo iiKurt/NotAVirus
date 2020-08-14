@@ -26,6 +26,7 @@ namespace PolarBear
 
             clientsListBox.ItemsSource = clients;
             messagesListBox.ItemsSource = messages;
+            messages.CollectionChanged += Messages_CollectionChanged;
 
             string[] adjectives = { "Fast", "Slow", "Agile", "Nimble", "Bad", "Broken", "Purple", "Sticky", "Inanimate" };
             string[] nouns = { "Bear", "Octopus", "Flamingo", "Optical Fibre", "Icecream", "Stick", "Carbon Rod" };
@@ -74,6 +75,12 @@ namespace PolarBear
                 sendButton.IsEnabled = false;
             }
             catch { } // TODO: catch relevant exceptions
+        }
+
+        private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        { // scroll any new items into view
+            messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
+            messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
         }
         #endregion
 
@@ -143,13 +150,6 @@ namespace PolarBear
                 MessageBox.Show(ex.ToString());
             }
         }
-
-        // not really a WPF event
-        private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        { // scroll any new items into view
-            messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
-            messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
-        }
         #endregion
 
         #region Broadcast
@@ -160,6 +160,7 @@ namespace PolarBear
         private void Broadcast_Join(RemoteClient client)
         {
             clients.Add(client);
+            messages.Add(new InternalMessage($"{client.Name} has joined"));
             // broadcast that we are here
             RemoteMessage msg = new RemoteMessage(nameTextBox.Text, Event.Discovery);
             broadcast.Send(msg);
@@ -180,6 +181,18 @@ namespace PolarBear
             ));
         private void Broadcast_Discovery(RemoteClient client)
         {
+            // this discovery request may not be directed towards us.
+            // someone else could have joined, and people respond with a discovery request, we will receive one -- even if we didn't ask for it
+            // ideally a discovery request would be directly messaged towards a client
+
+            foreach (RemoteClient c in clients)
+            {
+                // client already exists so we don't need to add it
+                if (c.Name == client.Name) // TODO: client.Equals()?
+                {
+                    return;
+                }
+            }
             clients.Add(client);
         }
 
@@ -189,16 +202,21 @@ namespace PolarBear
             ));
         private void Broadcast_Leave(RemoteClient client)
         {
-            MessageBox.Show("wack");
-            clients.Remove(client);
             for (int i = 0; i < clients.Count; i++)
             {
-                if (clients[i].Name == client.Name)
+                if (clients[i].Name == client.Name) // TODO: client.Equals()?
                 {
                     clients.RemoveAt(i);
+                    messages.Add(new InternalMessage($"{client.Name} has left"));
                 }
             }
         }
         #endregion
+
+        // TODOS:
+        // Direct client requests events would be:
+        // Discovery, Message, Leave
+        // Broadcast request events would be:
+        // Join
     }
 }
