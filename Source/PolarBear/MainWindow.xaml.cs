@@ -17,20 +17,22 @@ namespace PolarBear
         Broadcast broadcast;
         const ushort port = 11000;
 
+        ObservableCollection<Client> clients = new ObservableCollection<Client>();
         ObservableCollection<Message> messages = new ObservableCollection<Message>();
 
         public MainWindow()
         {
             InitializeComponent();
 
+            clientsListBox.ItemsSource = clients;
             messagesListBox.ItemsSource = messages;
 
-            string[] verbs = { "Fast", "Slow", "Agile", "Nimble", "Bad", "Broken", "Purple" };
-            string[] nouns = { "Bear", "Octopus", "Flamingo", "Optical Fibre", "Icecream" };
+            string[] adjectives = { "Fast", "Slow", "Agile", "Nimble", "Bad", "Broken", "Purple", "Sticky", "Inanimate" };
+            string[] nouns = { "Bear", "Octopus", "Flamingo", "Optical Fibre", "Icecream", "Stick", "Carbon Rod" };
 
             Random rng = new Random();
 
-            nameTextBox.Text = $"{verbs[rng.Next(0, verbs.Length)]} {nouns[rng.Next(0, nouns.Length)]}";
+            nameTextBox.Text = $"{adjectives[rng.Next(0, adjectives.Length)]} {nouns[rng.Next(0, nouns.Length)]}";
         }
 
         #region Helpers
@@ -57,12 +59,19 @@ namespace PolarBear
         
         private void sendTheMessage()
         {
+            if (composeTextBox.Text == "")
+                return;
+
             try
             {
-                RemoteMessage msg = new RemoteMessage();
-                msg.Contents = $"{nameTextBox.Text}: {composeTextBox.Text}";
-                msg.Event = Event.Message;
+                RemoteMessage msg = new RemoteMessage($"{nameTextBox.Text}: {composeTextBox.Text}");
                 broadcast.Send(msg);
+
+                msg.Contents = $"You: {composeTextBox.Text}";
+                messages.Add(msg);
+
+                composeTextBox.Clear();
+                sendButton.IsEnabled = false;
             }
             catch { } // TODO: catch relevant exceptions
         }
@@ -80,9 +89,7 @@ namespace PolarBear
                 broadcast.Leave += OnBroadcastLeave;
 
                 // broadcast that we are online
-                RemoteMessage msg = new RemoteMessage();
-                msg.Contents = nameTextBox.Text;
-                msg.Event = Event.Join;
+                RemoteMessage msg = new RemoteMessage(nameTextBox.Text, Event.Join);
                 broadcast.Send(msg);
 
                 // we are 'connected'
@@ -92,8 +99,7 @@ namespace PolarBear
 
                 nameLabel.IsEnabled = false;
                 nameTextBox.IsEnabled = false;
-
-                sendButton.IsEnabled = true;
+                
                 composeTextBox.IsEnabled = true;
                 composeTextBox.Focus();
             }
@@ -106,28 +112,31 @@ namespace PolarBear
         }
         private void composeTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Return)
+            switch (e.Key)
             {
-                sendTheMessage();
+                case Key.Return:
+                    sendTheMessage();
+                    break;
             }
+        }
+        
+        private void composeTextBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (composeTextBox.Text != "")
+                sendButton.IsEnabled = true;
+            else
+                sendButton.IsEnabled = false;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (!connected)
                 return;
-
-            //MessageBox.Show("goodbye");
+            
             try
             {
-                RemoteMessage message = new RemoteMessage(""); //we are the sender
-                message.Event = Event.Leave;
-
+                RemoteMessage message = new RemoteMessage(nameTextBox.Text, Event.Leave);
                 broadcast.Send(message);
-                /*for (int i = 0; i < clients.Count; i++)
-				{
-					clients[i].Send(message);
-				}*/
             }
             catch (SocketException ex)
             {
@@ -146,38 +155,49 @@ namespace PolarBear
         #region Broadcast
         public void OnBroadcastJoin(object sender, NewBroadcastEventArgs e) =>
             Dispatcher.BeginInvoke(new Action(() =>
-                Broadcast_Join()
+                Broadcast_Join(new RemoteClient(e.message.Contents))
             ));
-        private void Broadcast_Join()
+        private void Broadcast_Join(RemoteClient client)
         {
-            throw new NotImplementedException();
+            clients.Add(client);
+            // broadcast that we are here
+            RemoteMessage msg = new RemoteMessage(nameTextBox.Text, Event.Discovery);
+            broadcast.Send(msg);
         }
 
         public void OnBroadcastMessage(object sender, NewBroadcastEventArgs e) =>
             Dispatcher.BeginInvoke(new Action(() =>
-                Broadcast_Message()
+                Broadcast_Message(e.message)
             ));
-        private void Broadcast_Message()
+        private void Broadcast_Message(RemoteMessage message)
         {
-            throw new NotImplementedException();
+            messages.Add(message);
         }
 
         public void OnBroadcastDiscovery(object sender, NewBroadcastEventArgs e) =>
             Dispatcher.BeginInvoke(new Action(() =>
-                Broadcast_Discovery(e.message.Contents)
+                Broadcast_Discovery(new RemoteClient(e.message.Contents))
             ));
-        private void Broadcast_Discovery(string clientName)
+        private void Broadcast_Discovery(RemoteClient client)
         {
-            throw new NotImplementedException();
+            clients.Add(client);
         }
 
         public void OnBroadcastLeave(object sender, NewBroadcastEventArgs e) =>
             Dispatcher.BeginInvoke(new Action(() =>
-                Broadcast_Leave()
+                Broadcast_Leave(new RemoteClient(e.message.Contents))
             ));
-        private void Broadcast_Leave()
+        private void Broadcast_Leave(RemoteClient client)
         {
-            throw new NotImplementedException();
+            MessageBox.Show("wack");
+            clients.Remove(client);
+            for (int i = 0; i < clients.Count; i++)
+            {
+                if (clients[i].Name == client.Name)
+                {
+                    clients.RemoveAt(i);
+                }
+            }
         }
         #endregion
     }

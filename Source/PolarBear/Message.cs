@@ -49,7 +49,7 @@ namespace PolarBear
         // override the string in the MessageItem class
         public new string Contents { get; set; }
 
-        public RemoteMessage(string contents = "", Event msgEvent = Event.Message)
+        public RemoteMessage(string contents, Event msgEvent = Event.Message)
         {
             this.Event = msgEvent;
             this.Contents = contents;
