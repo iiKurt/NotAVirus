@@ -32,10 +32,9 @@ namespace PolarBear
     {
         public new string Contents { get; set; }
 
-        public LocalMessage(string words, string sender)
+        public LocalMessage(string contents)
         {
-            Words = words;
-            Sender = sender;
+            Contents = contents;
         }
     }
 
@@ -50,19 +49,10 @@ namespace PolarBear
         // override the string in the MessageItem class
         public new string Contents { get; set; }
 
-        public RemoteMessage(string words = "")
+        public RemoteMessage(string contents = "", Event msgEvent = Event.Message)
         {
-            this.Event = Event.Message;
-            this.Words = words;
-        }
-
-        public RemoteMessage(Event Event)
-        {
-            this.Event = Event;
-            if (Event == Event.Message)
-            {
-                this.Words = "";
-            }
+            this.Event = msgEvent;
+            this.Contents = contents;
         }
 
         // https://stackoverflow.com/a/1446612

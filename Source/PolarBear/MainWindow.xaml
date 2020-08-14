@@ -24,7 +24,7 @@
         <Button x:Name="sendButton" Content="Send" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="sendButton_Click" Height="23" IsEnabled="False"/>
 
         <Label Content="People" HorizontalAlignment="Left" Margin="10,6,0,0" VerticalAlignment="Top"/>
-        <ListBox x:Name="clientsListBox" Margin="10,38,0,10" ItemsSource="{Binding}" HorizontalAlignment="Left" Width="180" MouseDoubleClick="clientsListBox_MouseDoubleClick">
+        <ListBox x:Name="clientsListBox" Margin="10,38,0,10" ItemsSource="{Binding}" HorizontalAlignment="Left" Width="180">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Name}"/>
