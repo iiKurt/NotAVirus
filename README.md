@@ -1,4 +1,4 @@
-# NotAVirus
+# PolarBear
 *Happy fun school project* (Definitely riddled with bugs)
 
 ## Overview
