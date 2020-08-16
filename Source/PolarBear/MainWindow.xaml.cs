@@ -28,8 +28,8 @@ namespace PolarBear
             messagesListBox.ItemsSource = messages;
             messages.CollectionChanged += Messages_CollectionChanged;
 
-            string[] adjectives = { "Fast", "Slow", "Agile", "Nimble", "Bad", "Broken", "Purple", "Sticky", "Inanimate" };
-            string[] nouns = { "Bear", "Octopus", "Flamingo", "Optical Fibre", "Icecream", "Stick", "Carbon Rod" };
+            string[] adjectives = { "Fast", "Slow", "Agile", "Nimble", "Bad", "Broken", "Purple", "Sticky", "Inanimate", "Neodymium" };
+            string[] nouns = { "Bear", "Octopus", "Flamingo", "Optical Fibre", "Icecream", "Stick", "Carbon Rod", "Magnet" };
 
             Random rng = new Random();
 
