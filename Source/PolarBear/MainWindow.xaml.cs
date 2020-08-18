@@ -14,6 +14,8 @@ namespace PolarBear
     /// </summary>
     public partial class MainWindow : Window
     {
+        System.Windows.Forms.NotifyIcon notifyIcon = new System.Windows.Forms.NotifyIcon();
+
         bool connected = false;
         Broadcast broadcast;
         const ushort port = 11000;
@@ -25,6 +27,11 @@ namespace PolarBear
         {
             InitializeComponent();
 
+            // set up notifications (https://stackoverflow.com/a/35443419)
+            notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+            // Hides the icon when the notification is closed
+            notifyIcon.BalloonTipClosed += (s, e) => notifyIcon.Visible = false;
+
             clientsListBox.ItemsSource = clients;
             messagesListBox.ItemsSource = messages;
             messages.CollectionChanged += Messages_CollectionChanged;
@@ -33,7 +40,6 @@ namespace PolarBear
             string[] nouns = { "Bear", "Octopus", "Flamingo", "Optical Fibre", "Icecream", "Stick", "Carbon Rod", "Magnet" };
 
             Random rng = new Random();
-
             nameTextBox.Text = $"{adjectives[rng.Next(0, adjectives.Length)]} {nouns[rng.Next(0, nouns.Length)]}";
         }
 
@@ -82,6 +88,24 @@ namespace PolarBear
         { // scroll any new items into view
             messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
             messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
+
+            Message msg = messages[messagesListBox.SelectedIndex];
+
+            if (msg is RemoteMessage) // TODO: display different title based on event type
+            {
+                showNotification("New Message maybe", msg.Contents);
+            }
+            else if (msg is InternalMessage)
+            {
+                showNotification("something important happened", msg.Contents);
+            }
+        }
+        
+        private void showNotification(string title, string contents)
+        {
+            notifyIcon.Visible = true;
+            // show the notification
+            notifyIcon.ShowBalloonTip(3000, title, contents, System.Windows.Forms.ToolTipIcon.None);
         }
         #endregion
 
