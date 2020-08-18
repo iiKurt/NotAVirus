@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Windows.Media;
 
 namespace PolarBear
 {
@@ -18,13 +19,22 @@ namespace PolarBear
     public abstract class Message
     {
         public string Contents { get; set; }
+        public Brush Color { get; set; } = new SolidColorBrush(Colors.Black);
     }
 
     public class InternalMessage : Message
     {
-        public InternalMessage(string contents)
+        public InternalMessage(string contents, Color? color = null)
         {
             Contents = contents;
+            if (color == null)
+            {
+                Color = new SolidColorBrush(Colors.Black);
+            }
+            else
+            {
+                Color = new SolidColorBrush((Color)color);
+            }
         }
     }
 
@@ -35,6 +45,7 @@ namespace PolarBear
         public LocalMessage(string contents)
         {
             Contents = contents;
+            Color = new SolidColorBrush(Colors.MediumBlue);
         }
     }
 

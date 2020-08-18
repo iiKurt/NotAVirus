@@ -15,7 +15,7 @@
         <ListBox x:Name="messagesListBox" Margin="195,38,10,38" ItemsSource="{Binding}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding Contents}"/>
+                    <TextBlock Text="{Binding Contents}" Foreground="{Binding Color}"/>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

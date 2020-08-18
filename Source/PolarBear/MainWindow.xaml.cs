@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace PolarBear
 {
@@ -68,8 +69,8 @@ namespace PolarBear
                 RemoteMessage msg = new RemoteMessage($"{nameTextBox.Text}: {composeTextBox.Text}");
                 broadcast.Send(msg);
 
-                msg.Contents = $"You: {composeTextBox.Text}";
-                messages.Add(msg);
+                LocalMessage lmsg = new LocalMessage($"You: {composeTextBox.Text}");
+                messages.Add(lmsg);
 
                 composeTextBox.Clear();
                 sendButton.IsEnabled = false;
@@ -160,7 +161,7 @@ namespace PolarBear
         private void Broadcast_Join(RemoteClient client)
         {
             clients.Add(client);
-            messages.Add(new InternalMessage($"{client.Name} has joined"));
+            messages.Add(new InternalMessage($"{client.Name} has joined", Colors.Green));
             // broadcast that we are here
             RemoteMessage msg = new RemoteMessage(nameTextBox.Text, Event.Discovery);
             broadcast.Send(msg);
@@ -207,7 +208,7 @@ namespace PolarBear
                 if (clients[i].Name == client.Name) // TODO: client.Equals()?
                 {
                     clients.RemoveAt(i);
-                    messages.Add(new InternalMessage($"{client.Name} has left"));
+                    messages.Add(new InternalMessage($"{client.Name} has left", Colors.Red));
                 }
             }
         }
