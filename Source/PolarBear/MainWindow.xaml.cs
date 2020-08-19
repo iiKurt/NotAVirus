@@ -85,23 +85,35 @@ namespace PolarBear
         }
 
         private void Messages_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        { // scroll any new items into view
+        {
+            // scroll any new items into view
             messagesListBox.SelectedIndex = messagesListBox.Items.Count - 1;
             messagesListBox.ScrollIntoView(messagesListBox.SelectedItem);
 
-            Message msg = messages[messagesListBox.SelectedIndex];
+            Message msg = (Message)e.NewItems[0];
 
             if (msg is RemoteMessage) // TODO: display different title based on event type
             {
-                showNotification("New Message maybe", msg.Contents);
+                RemoteMessage rmsg = (RemoteMessage)msg;
+                switch (((RemoteMessage)msg).Event)
+                {
+                    case Event.Message:
+                        showNotification("New Message", rmsg.Contents);
+                        break;
+                    case Event.Discovery:
+                        break;
+                    default:
+                        showNotification(rmsg.Contents);
+                        break;
+                }
             }
             else if (msg is InternalMessage)
             {
                 showNotification("something important happened", msg.Contents);
             }
         }
-        
-        private void showNotification(string title, string contents)
+
+        private void showNotification(string title, string contents = "")
         {
             notifyIcon.Visible = true;
             // show the notification

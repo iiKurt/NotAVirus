@@ -40,8 +40,6 @@ namespace PolarBear
 
     public class LocalMessage : Message
     {
-        public new string Contents { get; set; }
-
         public LocalMessage(string contents)
         {
             Contents = contents;
@@ -55,10 +53,6 @@ namespace PolarBear
         public bool Direct = false;
         public Sign Signed = Sign.Unsigned;
         public Event Event = Event.Message;
-
-        // wpf only likes properties and not fields
-        // override the string in the MessageItem class
-        public new string Contents { get; set; }
 
         public RemoteMessage(string contents, Event msgEvent = Event.Message)
         {
