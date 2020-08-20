@@ -19,7 +19,12 @@ namespace PolarBear
     public abstract class Message
     {
         public string Contents { get; set; }
-        public Brush Color { get; set; } = new SolidColorBrush(Colors.Black);
+        public Brush Color { get; protected set; } = new SolidColorBrush(Colors.Black);
+
+        public Message()
+        {
+            Color.Freeze();
+        }
     }
 
     public class InternalMessage : Message
