@@ -92,32 +92,30 @@ namespace PolarBear
 
             Message msg = (Message)e.NewItems[0];
 
-            if (msg is RemoteMessage) // TODO: display different title based on event type
+            if (msg is RemoteMessage)
             {
                 RemoteMessage rmsg = (RemoteMessage)msg;
                 switch (((RemoteMessage)msg).Event)
                 {
-                    case Event.Message:
-                        showNotification("New Message", rmsg.Contents);
-                        break;
-                    case Event.Discovery:
-                        break;
-                    default:
-                        showNotification(rmsg.Contents);
+                    case Event.Message: // only normal messages should be added to the collection anyway tho
+                        showNotification("New Message", rmsg.Contents); // TODO: show message author as title
                         break;
                 }
             }
             else if (msg is InternalMessage)
             {
-                showNotification("something important happened", msg.Contents);
+                showNotification(msg.Contents);
             }
         }
 
-        private void showNotification(string title, string contents = "")
+        private void showNotification(string title, string contents = " ")
         {
-            notifyIcon.Visible = true;
-            // show the notification
-            notifyIcon.ShowBalloonTip(3000, title, contents, System.Windows.Forms.ToolTipIcon.None);
+            if (!this.IsActive) // only show notifications if window is not active (in background)
+            {
+                notifyIcon.Visible = true;
+                // show the notification
+                notifyIcon.ShowBalloonTip(3000, title, contents, System.Windows.Forms.ToolTipIcon.None);
+            }
         }
         #endregion
 
