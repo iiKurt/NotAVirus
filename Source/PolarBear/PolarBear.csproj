@@ -20,12 +20,15 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>C:\Users\wink.k.16243\Downloads\VS\Build\Debug\</OutputPath>
+    <IntermediateOutputPath>C:\Users\wink.k.16243\Downloads\VS\Build\Debug\Obj</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>C:\Users\wink.k.16243\Downloads\VS\Build\Release\</OutputPath>
+    <IntermediateOutputPath>C:\Users\wink.k.16243\Downloads\VS\Build\Release\Obj</IntermediateOutputPath>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
